@@ -1,0 +1,5 @@
+# dsh-aemeath bundle patch: inserts the dual-face plugin row (皮肤 + 桌宠 + 推理强度滑块).
+# Install: dsh plugin --profile <name> add link:/path/to/dsh-aemeath
+- insert:
+    - id: dsh-aemeath
+      name: 'dsh-aemeath'
