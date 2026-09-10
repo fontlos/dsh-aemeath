@@ -5,7 +5,7 @@
 
 import React from 'react'
 import { bindSnapshotSelector } from '../store.js'
-import { EFFECT_STYLES, DEFAULT_STYLE } from '../fx.js'
+import { resolveStyle } from '../fx.js'
 
 /** Subscribe a directory store ({ subscribe, getSnapshot }) to React. */
 function useDirectoryState(directory) {
@@ -88,14 +88,14 @@ export function useModelData({ directory, settingsScope, initialStyle, t }) {
   if (styleSnap && styleSnap.status === 'ready' && styleSnap.value && typeof styleSnap.value.effortStyle === 'string') {
     liveStyle = styleSnap.value.effortStyle
   }
-  const activeStyle = EFFECT_STYLES.some((s) => s.id === liveStyle) ? liveStyle : DEFAULT_STYLE
+  const activeStyle = resolveStyle(liveStyle)
   const fxSprayFlow = activeStyle === 'spray-flow'
-  const fxUndertow = activeStyle === 'undertow'
+  const fxStarlight = activeStyle === 'starlight'
 
   return {
     ...deriveModelData(useDirectoryState(directory), t),
     activeStyle,
     fxSprayFlow,
-    fxUndertow,
+    fxStarlight,
   }
 }

@@ -1,16 +1,16 @@
 // Max-tier effects domain: owns the spray ignition epoch (remount on every
-// entry into MAX so the plume visibly starts from the nozzle) and the undertow
+// entry into MAX so the plume visibly starts from the nozzle) and the starlight
 // exit phase (leaving MAX keeps the effect mounted briefly while a sheet
 // sweeps in), and builds the effect element trees.
 
 import React from 'react'
-import { undertowRevealArmed, MATRIX, RUNNERS, SPRAY } from '../fx.js'
+import { starlightRevealArmed, MATRIX, RUNNERS, SPRAY } from '../fx.js'
 
-export function useMaxFx({ effMode, fxSprayFlow, fxUndertow, effortOpen, sessionKey }) {
+export function useMaxFx({ effMode, fxSprayFlow, fxStarlight, effortOpen, sessionKey }) {
   // Bumped every time the slider settles into MAX, remounting the spray so
   // the ignition stagger plays from the nozzle outward.
   const [sprayEpoch, setSprayEpoch] = React.useState(0)
-  // When the tier leaves MAX the undertow effect stays mounted briefly while
+  // When the tier leaves MAX the starlight effect stays mounted briefly while
   // a blue sheet sweeps in from the left, then unmounts.
   const [exitPhase, setExitPhase] = React.useState(false)
   const wasMaxRef = React.useRef(false)
@@ -37,12 +37,12 @@ export function useMaxFx({ effMode, fxSprayFlow, fxUndertow, effortOpen, session
     }
   }, [effMode])
 
-  // Disarm the undertow reveal when the panel closes: the entry animation is
+  // Disarm the starlight reveal when the panel closes: the entry animation is
   // armed only by a real tier switch INTO MAX while the panel is open, so a
   // plain reopen must not replay it. Runs as soon as effortOpen turns false,
   // before the panel's closing transition finishes.
   React.useEffect(() => {
-    if (!effortOpen) undertowRevealArmed.delete(sessionKey)
+    if (!effortOpen) starlightRevealArmed.delete(sessionKey)
   }, [effortOpen])
 
   // Ignition: remount the spray each time the control settles into MAX,
@@ -90,20 +90,20 @@ export function useMaxFx({ effMode, fxSprayFlow, fxUndertow, effortOpen, session
     )
     : null
 
-  // Undertow effect: shown on the MAX tier (plus the brief exit phase). A
+  // Starlight effect: shown on the MAX tier (plus the brief exit phase). A
   // horizontal white→purple gradient backs the bar; the static dot-matrix
   // texture follows the gradient and cell-sized white sparks are ejected from
   // the right edge, running left and fading out. The reveal animation plays
   // only while the panel is open AND the user really switched a tier into MAX
   // while it was open; reopening the panel on MAX shows the settled effect
   // instantly.
-  const undertowVisible = fxUndertow && (effMode === 'max' || exitPhase)
-  const revealFirst = undertowVisible && undertowRevealArmed.get(sessionKey) === true
-  const matrixEl = undertowVisible
+  const starlightVisible = fxStarlight && (effMode === 'max' || exitPhase)
+  const revealFirst = starlightVisible && starlightRevealArmed.get(sessionKey) === true
+  const matrixEl = starlightVisible
     ? React.createElement(
       React.Fragment,
       null,
-      React.createElement('div', { className: 'aem-undertowBg' + (exitPhase ? ' aem-undertowExit' : '') }),
+      React.createElement('div', { className: 'aem-starlightBg' + (exitPhase ? ' aem-starlightExit' : '') }),
       React.createElement(
         'div', { className: 'aem-matrix' + (exitPhase ? ' aem-matrixExit' : '') },
         MATRIX.map((cell, i) =>

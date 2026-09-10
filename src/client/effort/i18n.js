@@ -26,9 +26,9 @@ const zh = {
     'settings.advancedEffort.title': '高级的推理强度选择',
     'settings.advancedEffort.desc': '开启后推理强度使用滑块式调节，并可在下方选择最高档的动画样式；关闭则使用 DSH 默认设计。',
     'settings.style.title': '推理强度动画样式',
-    'settings.style.desc': '选择最高档位的喷射动画效果。',
+    'settings.style.desc': '选择最高档位的动画效果。',
+    'style.starlight': '璀璨星光',
     'style.sprayFlow': '喷射流光',
-    'style.undertow': '暗流涌动',
     'settings.on': '已开启',
     'settings.off': '已关闭',
 }
@@ -58,8 +58,8 @@ const en = {
     'settings.advancedEffort.desc': 'Use the slider-style effort control and pick an animation style for the max tier below; off falls back to the default DSH design.',
     'settings.style.title': 'Effort animation style',
     'settings.style.desc': 'Choose the animation style for the maximum effort tier.',
+    'style.starlight': 'Starlight',
     'style.sprayFlow': 'Spray Flow',
-    'style.undertow': 'Dark Undercurrent',
     'settings.on': 'On',
     'settings.off': 'Off',
 }

@@ -4,7 +4,7 @@
 
 import React from 'react'
 import { easeOutCubic, easeOutQuad } from './visual.js'
-import { undertowRevealArmed } from '../fx.js'
+import { starlightRevealArmed } from '../fx.js'
 
 export function useEffortSlider({
   locked,
@@ -154,10 +154,10 @@ export function useEffortSlider({
       if (!keepOpen) requestClose(true)
       return
     }
-    // Arm the undertow entry animation only when the user really switches a
+    // Arm the starlight entry animation only when the user really switches a
     // tier INTO MAX. Switching between non-MAX tiers, staying on MAX, or
     // merely reopening the panel never arms it.
-    if (idx === stops.length - 1) undertowRevealArmed.set(sessionKey, true)
+    if (idx === stops.length - 1) starlightRevealArmed.set(sessionKey, true)
     pendingCommitRef.current = idx
     pendingTargetRef.current = idx
     const stop = stops[idx]

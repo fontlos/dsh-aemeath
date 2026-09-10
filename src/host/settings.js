@@ -24,7 +24,7 @@ function loadSchema() {
             const config = z.object({
                 petEnabled: z.boolean().default(true),
                 advancedEffort: z.boolean().default(false),
-                effortStyle: z.string().default('spray-flow'),
+                effortStyle: z.string().default('starlight'),
             })
             return { ns, config }
         })

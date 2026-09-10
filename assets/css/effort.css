@@ -54,12 +54,12 @@
 .aem-fillMax.aem-fx-spray-flow .aem-sprayNozzle{opacity:1;animation:aem-nozzle 1.6s ease-in-out infinite}
 .aem-sprayWrap{position:absolute;inset:0;opacity:0;animation:aem-ignite .55s ease-out var(--launch,0s) both;pointer-events:none}
 .aem-sprayDot{position:absolute;left:var(--x,95%);top:var(--y,50%);width:calc(var(--s,3px) * var(--tl,3));height:var(--s,3px);margin-top:calc(var(--s,3px) / -2);border-radius:50%;background:linear-gradient(90deg,rgba(255,255,255,1) 0%,rgba(255,255,255,.55) 30%,rgba(255,255,255,0) 100%);filter:drop-shadow(0 0 2px rgba(255,255,255,.75));opacity:0;animation:aem-spray var(--dur,1.5s) linear var(--delay,0s) infinite}
-.aem-undertowBg{position:absolute;left:0;right:0;top:calc(50% - 8.5px);transform:translateY(-50%);height:24px;border-radius:7px;background:linear-gradient(90deg,#ffffff 0%,#a855f7 100%);clip-path:inset(0 0 0 0);pointer-events:none}
+.aem-starlightBg{position:absolute;left:0;right:0;top:calc(50% - 8.5px);transform:translateY(-50%);height:24px;border-radius:7px;background:linear-gradient(90deg,#ffffff 0%,#a855f7 100%);clip-path:inset(0 0 0 0);pointer-events:none}
 .aem-matrix{position:absolute;left:0;right:0;top:calc(50% - 8.5px);transform:translateY(-50%);height:24px;border-radius:7px;overflow:hidden;padding:2px 3px;display:grid;grid-template-columns:repeat(64,1fr);grid-template-rows:repeat(6,1fr);gap:1px;clip-path:inset(0 0 0 0);pointer-events:none;-webkit-mask-image:linear-gradient(90deg,transparent 0%,transparent 20%,#000 80%,#000 100%);mask-image:linear-gradient(90deg,transparent 0%,transparent 20%,#000 80%,#000 100%)}
 .aem-reveal{position:absolute;left:0;right:0;top:calc(50% - 8.5px);transform:translateY(-50%);height:24px;border-radius:7px;overflow:hidden;pointer-events:none}
 .aem-revealSheet{position:absolute;left:0;top:0;bottom:0;width:130%;background:linear-gradient(90deg,#3B82F6 0%,#3B82F6 70%,transparent 100%);animation:aem-reveal-move .85s cubic-bezier(.25,.7,.3,1) .05s both}
 .aem-revealSheet.aem-revealDone{animation:none;transform:translateX(-100%)}
-.aem-undertowBg.aem-undertowExit{animation:aem-shrink-rl .5s cubic-bezier(.3,.7,.3,1) both}
+.aem-starlightBg.aem-starlightExit{animation:aem-shrink-rl .5s cubic-bezier(.3,.7,.3,1) both}
 .aem-matrix.aem-matrixExit{animation:aem-shrink-rl .5s cubic-bezier(.3,.7,.3,1) both}
 .aem-cell{border-radius:1px;background:var(--cell-color,#d6d6db);pointer-events:none}
 .aem-runner{position:absolute;top:var(--run-y,50%);width:2.5px;height:2.5px;margin-top:-1.25px;border-radius:.5px;background:#fff;box-shadow:0 0 4px rgba(255,255,255,.95);animation:aem-run var(--run-dur,1.4s) linear var(--run-delay,0s) infinite}

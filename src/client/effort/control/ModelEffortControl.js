@@ -44,7 +44,7 @@ export function ModelEffortControl(props) {
   // The tier mode always follows the visual position (visualIdxRef), never
   // the async commit state: the moment the handle leaves MAX — while
   // dragging, during the snap animation, or before the model-directory select
-  // settles — the undertow effect starts its exit transition in lockstep with
+  // settles — the starlight effect starts its exit transition in lockstep with
   // the thumb motion.
   const maxIdx = data.stops.length - 1
   const visIdx = slider.visualIdxRef.current
@@ -55,7 +55,7 @@ export function ModelEffortControl(props) {
   const fx = useMaxFx({
     effMode,
     fxSprayFlow: data.fxSprayFlow,
-    fxUndertow: data.fxUndertow,
+    fxStarlight: data.fxStarlight,
     effortOpen: panel.effortOpen,
     sessionKey,
   })

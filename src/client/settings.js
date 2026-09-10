@@ -7,14 +7,14 @@
 // `dsh-aemeath` settings scope. The seat claims the `conversation.input.model`
 // slot only while advancedEffort is on.
 //
-// Settings hydrate asynchronously on page load and the scope can become ready
-// without emitting a subscribe event; syncSeat therefore also polls until the
-// first ready snapshot so the seat engages after a refresh without a manual
-// toggle (see syncSeat + hydration poll below).
+// Settings hydrate asynchronously on page load, and this single-slot cell
+// renders its latest registration — so the seat re-registers a few times
+// shortly after boot whenever the official selector landed after us (see the
+// seat section below). Both are bounded and event-free.
 
 import React from 'react'
 import { NS, zh, en } from './effort/i18n.js'
-import { EFFECT_STYLES, DEFAULT_STYLE } from './effort/fx.js'
+import { EFFECT_STYLES, DEFAULT_STYLE, resolveStyle } from './effort/fx.js'
 import { bindSnapshotSelector } from './effort/store.js'
 import { ModelEffortControl } from './effort/control/index.js'
 
@@ -46,8 +46,7 @@ function mount(ctx) {
             try {
                 const snap = scope.getSnapshot()
                 if (snap && snap.status === 'ready' && snap.value && typeof snap.value.effortStyle === 'string') {
-                    const known = EFFECT_STYLES.some((s) => s.id === snap.value.effortStyle)
-                    if (known) return snap.value.effortStyle
+                    return resolveStyle(snap.value.effortStyle)
                 }
             } catch (_) { /* fall through */ }
             return DEFAULT_STYLE
@@ -123,7 +122,7 @@ function mount(ctx) {
             const advancedOn = !!(ready && snap.value && snap.value.advancedEffort === true)
             if (!advancedOn) return null
             const current = ready && snap.value && typeof snap.value.effortStyle === 'string'
-                ? snap.value.effortStyle
+                ? resolveStyle(snap.value.effortStyle)
                 : DEFAULT_STYLE
             const currentDef = EFFECT_STYLES.find((s) => s.id === current) || EFFECT_STYLES[0]
             return React.createElement(RowFrame, {
@@ -168,6 +167,17 @@ function mount(ctx) {
 
         // ---- conditional composer seat: claim the model slot while advanced ----
         // effort is on; release it (back to the official selector) when off.
+        //
+        // This single-slot cell renders the LATEST registration ("later shadows
+        // earlier"). The official selector's bundle activates together with the
+        // conversation UI, so it can register AFTER our boot registration and
+        // silently win the cell — a manual toggle off/on fixes it precisely
+        // because it re-registers us last. The bounded late-correction below
+        // does the same automatically: a few one-shot checks after boot
+        // re-register our entry when someone else landed after us. It does NOT
+        // subscribe and never recurses, so it cannot loop.
+        const SLOT_KEY = 'conversation.input.model'
+        const OUR_REGISTRANT = 'dsh-aemeath'
         let seatFiber = null
         const syncSeat = function () {
             let enabled = false
@@ -179,13 +189,11 @@ function mount(ctx) {
                 seatFiber = sctx.inject(['slots', 'modelDirectories', 'sessions'], function (seatCtx) {
                     const models = seatCtx.modelDirectories
                     const sessions = seatCtx.sessions
-                    seatCtx.slots.inject('conversation.input.model', function () {
-                        return seatCtx.slots.register({
-                            name: 'conversation.input.model',
-                            // Single slot: one registration per priority; lowest renders. The
-                            // official model selector sits at priority 0 — shadow it with a
-                            // lower priority while the advanced-effort toggle is on, and the
-                            // official control returns automatically when this fiber dies.
+                    let entryDispose = null
+
+                    const entryOptions = function () {
+                        return {
+                            name: SLOT_KEY,
                             priority: -100,
                             inject: function (sessionId) {
                                 const directory = models.directoryFor(sessionId)
@@ -207,8 +215,43 @@ function mount(ctx) {
                                     settingsScope: scope,
                                 }
                             },
-                        }, ModelEffortControl)
+                        }
+                    }
+                    const registerEntry = function () {
+                        entryDispose = seatCtx.slots.register(entryOptions(), ModelEffortControl)
+                    }
+                    // Canonical mount: wait for the slot to be declared, register.
+                    seatCtx.slots.inject(SLOT_KEY, function () { registerEntry() })
+
+                    // Bounded refresh-race correction (see the comment above).
+                    const registrantOf = function (entry) {
+                        const options = entry && entry.options
+                        return (options && options.registrant) || (entry && entry.registrant)
+                    }
+                    let corrections = 0
+                    let lastOthers = -1
+                    const correct = function () {
+                        if (corrections >= 3 || entryDispose === null) return
+                        let all = []
+                        try { all = seatCtx.slots.entries(SLOT_KEY) || [] } catch (_) { return }
+                        const others = all.filter(function (e) { return registrantOf(e) !== OUR_REGISTRANT }).length
+                        const lastIsOurs = all.length > 0 && registrantOf(all[all.length - 1]) === OUR_REGISTRANT
+                        if (others > 0 && !lastIsOurs && others !== lastOthers) {
+                            corrections += 1
+                            lastOthers = others
+                            try { entryDispose() } catch (_) { /* already gone */ }
+                            entryDispose = null
+                            registerEntry()
+                        }
+                    }
+                    const timers = [600, 1500, 3000, 6000, 10000].map(function (ms) {
+                        return setTimeout(correct, ms)
                     })
+                    seatCtx.effect(function () {
+                        return function () {
+                            for (let i = 0; i < timers.length; i++) clearTimeout(timers[i])
+                        }
+                    }, 'dsh-aemeath: seat late corrections')
                 })
             } else if (!enabled && seatFiber) {
                 try { seatFiber.dispose() } catch (_) { /* already disposed */ }
@@ -216,14 +259,11 @@ function mount(ctx) {
             }
         }
 
-        // Live re-evaluation on settings changes.
+        // Live re-evaluation on settings changes (user writes always emit).
         sctx.effect(function () { return scope.subscribe(syncSeat) }, 'dsh-aemeath: seat sync')
 
-        // Bugfix (page refresh): the settings document hydrates asynchronously
-        // and the snapshot can reach `ready` without a subscribe event (the
-        // hydration may precede this effect). Until the first ready snapshot
-        // — or the attempts budget — poll syncSeat so a persisted
-        // advancedEffort=true engages the seat without a manual toggle.
+        // Hydration guard: the persisted document can land without a subscribe
+        // event, so poll briefly (bounded) until the first ready snapshot.
         let hydrationTimer = null
         let attempts = 0
         sctx.effect(function () {
@@ -235,7 +275,7 @@ function mount(ctx) {
                     ready = !!(snap && snap.status === 'ready')
                 } catch (_) { /* keep polling */ }
                 syncSeat()
-                if (ready || attempts >= 100) {
+                if (ready || attempts >= 50) {
                     clearInterval(hydrationTimer)
                     hydrationTimer = null
                 }
