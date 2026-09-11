@@ -22,6 +22,19 @@ export function ModelEffortControl(props) {
   const settingsScope = props.settingsScope
   const sessionKey = props.sessionId !== undefined ? String(props.sessionId) : 'default'
 
+  // Seat liveness: report mount/unmount so the seat registration can
+  // re-register when this cell switches to another registrant (a session
+  // change re-elects the winner; a fresh registration shadows it back).
+  const seatGeneration = props.seatGeneration
+  const onSeatMounted = props.onSeatMounted
+  const onSeatLost = props.onSeatLost
+  React.useEffect(() => {
+    if (typeof onSeatMounted === 'function') onSeatMounted(seatGeneration)
+    return () => {
+      if (typeof onSeatLost === 'function') onSeatLost(seatGeneration)
+    }
+  }, [])
+
   // --- domain hooks (fixed order, all unconditional) ---
   const data = useModelData({ directory, settingsScope, initialStyle, t })
   const panel = useEffortPanel()

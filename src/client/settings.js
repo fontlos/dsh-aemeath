@@ -7,10 +7,11 @@
 // `dsh-aemeath` settings scope. The seat claims the `conversation.input.model`
 // slot only while advancedEffort is on.
 //
-// Settings hydrate asynchronously on page load, and this single-slot cell
-// renders its latest registration — so the seat re-registers a few times
-// shortly after boot whenever the official selector landed after us (see the
-// seat section below). Both are bounded and event-free.
+// The seat claims the `conversation.input.model` slot only while advancedEffort
+// is on. That cell is per-session and elects its winner by priority, so the
+// seat re-registers whenever its control stops rendering (boot race with the
+// official selector, session switches) — see the seat section below. All of it
+// is bounded and event-free.
 
 import React from 'react'
 import { NS, zh, en } from './effort/i18n.js'
@@ -168,16 +169,18 @@ function mount(ctx) {
         // ---- conditional composer seat: claim the model slot while advanced ----
         // effort is on; release it (back to the official selector) when off.
         //
-        // This single-slot cell renders the LATEST registration ("later shadows
-        // earlier"). The official selector's bundle activates together with the
-        // conversation UI, so it can register AFTER our boot registration and
-        // silently win the cell — a manual toggle off/on fixes it precisely
-        // because it re-registers us last. The bounded late-correction below
-        // does the same automatically: a few one-shot checks after boot
-        // re-register our entry when someone else landed after us. It does NOT
-        // subscribe and never recurses, so it cannot loop.
+        // This per-session single-slot cell elects its winner by priority, and
+        // only a later registration shadows that winner. Two consequences:
+        //  · the official selector can register after our boot registration and
+        //    take the cell (a manual toggle off/on wins it back by registering
+        //    again), and
+        //  · every new session cell starts from the priority election again, so
+        //    switching sessions hands the cell back to the official selector.
+        // The seat therefore watches whether its control actually renders
+        // (mount/unmount reports from the component) and re-registers through a
+        // bounded verify ladder while it is not. No slot subscription and no
+        // recursion — it cannot loop.
         const SLOT_KEY = 'conversation.input.model'
-        const OUR_REGISTRANT = 'dsh-aemeath'
         let seatFiber = null
         const syncSeat = function () {
             let enabled = false
@@ -189,9 +192,21 @@ function mount(ctx) {
                 seatFiber = sctx.inject(['slots', 'modelDirectories', 'sessions'], function (seatCtx) {
                     const models = seatCtx.modelDirectories
                     const sessions = seatCtx.sessions
-                    let entryDispose = null
 
-                    const entryOptions = function () {
+                    // Seat liveness: a fresh session cell elects its winner by
+                    // priority, and only a later registration shadows it. Session
+                    // switches therefore hand the cell back to the official
+                    // selector until we register again (exactly what a manual
+                    // toggle does). The control reports its mount/unmount here and
+                    // a bounded verify ladder re-registers while it is not rendering.
+                    let entryDispose = null
+                    let generation = 0
+                    let mountedGeneration = -1
+                    let reRegisters = 0
+                    let verifyTimer = null
+                    let disposed = false
+
+                    const entryOptions = function (myGeneration) {
                         return {
                             name: SLOT_KEY,
                             priority: -100,
@@ -213,45 +228,60 @@ function mount(ctx) {
                                     sessionId,
                                     style: currentStyle(),
                                     settingsScope: scope,
+                                    seatGeneration: myGeneration,
+                                    onSeatMounted,
+                                    onSeatLost,
                                 }
                             },
                         }
                     }
                     const registerEntry = function () {
-                        entryDispose = seatCtx.slots.register(entryOptions(), ModelEffortControl)
+                        generation += 1
+                        entryDispose = seatCtx.slots.register(entryOptions(generation), ModelEffortControl)
                     }
-                    // Canonical mount: wait for the slot to be declared, register.
-                    seatCtx.slots.inject(SLOT_KEY, function () { registerEntry() })
-
-                    // Bounded refresh-race correction (see the comment above).
-                    const registrantOf = function (entry) {
-                        const options = entry && entry.options
-                        return (options && options.registrant) || (entry && entry.registrant)
-                    }
-                    let corrections = 0
-                    let lastOthers = -1
-                    const correct = function () {
-                        if (corrections >= 3 || entryDispose === null) return
-                        let all = []
-                        try { all = seatCtx.slots.entries(SLOT_KEY) || [] } catch (_) { return }
-                        const others = all.filter(function (e) { return registrantOf(e) !== OUR_REGISTRANT }).length
-                        const lastIsOurs = all.length > 0 && registrantOf(all[all.length - 1]) === OUR_REGISTRANT
-                        if (others > 0 && !lastIsOurs && others !== lastOthers) {
-                            corrections += 1
-                            lastOthers = others
+                    // Backoff ladder: the first check waits for a possible mount,
+                    // later checks cover a composer/session that appears late.
+                    const VERIFY_DELAYS = [500, 1200, 2500, 5000, 10000, 20000]
+                    const verify = function (attempt) {
+                        verifyTimer = null
+                        if (disposed) return
+                        if (mountedGeneration === generation) return // seat renders: healthy
+                        if (attempt >= VERIFY_DELAYS.length || reRegisters >= 200) return
+                        reRegisters += 1
+                        if (entryDispose !== null) {
                             try { entryDispose() } catch (_) { /* already gone */ }
                             entryDispose = null
-                            registerEntry()
                         }
+                        registerEntry()
+                        scheduleVerify(attempt + 1)
                     }
-                    const timers = [600, 1500, 3000, 6000, 10000].map(function (ms) {
-                        return setTimeout(correct, ms)
+                    const scheduleVerify = function (attempt) {
+                        if (disposed || verifyTimer !== null || attempt >= VERIFY_DELAYS.length) return
+                        verifyTimer = setTimeout(function () { verify(attempt) }, VERIFY_DELAYS[attempt])
+                    }
+                    function onSeatMounted(generationOfMount) {
+                        mountedGeneration = generationOfMount
+                    }
+                    function onSeatLost(generationOfMount) {
+                        if (generationOfMount === mountedGeneration) mountedGeneration = -1
+                        scheduleVerify(0)
+                    }
+
+                    // Canonical mount: wait for the slot to be declared, register,
+                    // then watch whether the seat actually renders.
+                    seatCtx.slots.inject(SLOT_KEY, function () {
+                        registerEntry()
+                        scheduleVerify(0)
                     })
                     seatCtx.effect(function () {
                         return function () {
-                            for (let i = 0; i < timers.length; i++) clearTimeout(timers[i])
+                            disposed = true
+                            if (verifyTimer !== null) {
+                                clearTimeout(verifyTimer)
+                                verifyTimer = null
+                            }
                         }
-                    }, 'dsh-aemeath: seat late corrections')
+                    }, 'dsh-aemeath: seat verify ladder')
                 })
             } else if (!enabled && seatFiber) {
                 try { seatFiber.dispose() } catch (_) { /* already disposed */ }
