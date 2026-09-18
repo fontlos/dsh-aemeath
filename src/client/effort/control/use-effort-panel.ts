@@ -1,34 +1,39 @@
-// Effort panel domain: the open/close state machine with its transition
-// teardown. All close paths converge on finishClose: the opacity transitionend,
-// the panel's aem-pop-out animation end, or a safety timer. Closing restores
-// inline panel styles on cancel, so a reopen mid-transition never leaves the
-// panel invisible.
+/**
+ * Effort panel domain: the open/close state machine with its transition
+ * teardown. All close paths converge on finishClose: the opacity transitionend,
+ * the panel's aem-pop-out animation end, or a safety timer. Closing restores
+ * inline panel styles on cancel, so a reopen mid-transition never leaves the
+ * panel invisible.
+ */
+import { useEffect, useRef, useState } from 'react'
+import type { AnimationEvent as ReactAnimationEvent } from 'react'
+import { createChevronAnimator } from './visual'
 
-import React from 'react'
-import { createChevronAnimator } from './visual.js'
+/** Safety timeout for the close teardown when no animation reports its end. */
+const CLOSE_FALLBACK_MS = 380
 
 export function useEffortPanel() {
-  const [effortOpen, setEffortOpen] = React.useState(false)
-  const [effortClosing, setEffortClosing] = React.useState(false)
+  const [effortOpen, setEffortOpen] = useState(false)
+  const [effortClosing, setEffortClosing] = useState(false)
 
-  const effortTriggerRef = React.useRef(null)
-  const effortChevronRef = React.useRef(null)
-  const panelRef = React.useRef(null)
-  const closeTransEndRef = React.useRef(null)
-  const closeTimerRef = React.useRef(null)
-  const closeRefocusRef = React.useRef(false)
-  const animatorRef = React.useRef(null)
-  if (animatorRef.current === null) animatorRef.current = createChevronAnimator()
+  const effortTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const effortChevronRef = useRef<HTMLSpanElement | null>(null)
+  const panelRef = useRef<HTMLDivElement | null>(null)
+  const closeTransEndRef = useRef<((event: TransitionEvent) => void) | null>(null)
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const closeRefocusRef = useRef(false)
+  // One animator per mounted control, created on first render.
+  const [animator] = useState(createChevronAnimator)
 
   // Chevron rotation follows the panel visibility (closing counts as closed).
-  React.useEffect(() => {
-    if (effortChevronRef.current) animatorRef.current.animate(effortChevronRef.current, effortOpen && !effortClosing)
+  useEffect(() => {
+    if (effortChevronRef.current) animator.animate(effortChevronRef.current, effortOpen && !effortClosing)
   }, [effortOpen, effortClosing])
 
   // Unmount: stop the rotation + any pending safety timer.
-  React.useEffect(() => () => {
+  useEffect(() => () => {
     if (closeTimerRef.current !== null) clearTimeout(closeTimerRef.current)
-    if (animatorRef.current.state.raf !== null) cancelAnimationFrame(animatorRef.current.state.raf)
+    if (animator.state.raf !== null) cancelAnimationFrame(animator.state.raf)
   }, [])
 
   /**
@@ -36,7 +41,7 @@ export function useEffortPanel() {
    * close (reopen mid-transition) must restore them, otherwise the panel
    * stays invisible.
    */
-  function cancelClose() {
+  function cancelClose(): void {
     if (closeTimerRef.current !== null) {
       clearTimeout(closeTimerRef.current)
       closeTimerRef.current = null
@@ -53,7 +58,7 @@ export function useEffortPanel() {
   }
 
   /** Open the panel (the caller closes the model picker first). */
-  function open() {
+  function open(): void {
     cancelClose()
     setEffortClosing(false)
     setEffortOpen(true)
@@ -64,7 +69,7 @@ export function useEffortPanel() {
    * close transition finished (transitionend on opacity), when the pop-out
    * animation end fires, or by the safety timer. Idempotent.
    */
-  function finishClose() {
+  function finishClose(): void {
     if (closeTimerRef.current !== null) {
       clearTimeout(closeTimerRef.current)
       closeTimerRef.current = null
@@ -87,13 +92,13 @@ export function useEffortPanel() {
    * which would make the panel vanish with no visual feedback. The unmount
    * happens on transitionend, with the timer as a safety net.
    */
-  function playCloseTransition(panelEl) {
+  function playCloseTransition(panelEl: HTMLDivElement): void {
     if (closeTransEndRef.current !== null) {
       panelEl.removeEventListener('transitionend', closeTransEndRef.current)
       closeTransEndRef.current = null
     }
-    const onTEnd = (ev) => {
-      if (ev && ev.propertyName !== 'opacity') return
+    const onTEnd = (event: TransitionEvent): void => {
+      if (event.propertyName !== 'opacity') return
       if (closeTransEndRef.current !== null) {
         panelEl.removeEventListener('transitionend', closeTransEndRef.current)
         closeTransEndRef.current = null
@@ -111,13 +116,13 @@ export function useEffortPanel() {
   }
 
   /** Start closing; refocus the effort trigger once gone when requested. */
-  function requestClose(refocus) {
+  function requestClose(refocus: boolean): void {
     if (!effortOpen || effortClosing) return
-    closeRefocusRef.current = !!refocus
+    closeRefocusRef.current = refocus
     setEffortClosing(true)
     cancelClose()
-    let delay = 380
-    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) delay = 0
+    let delay = CLOSE_FALLBACK_MS
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) delay = 0
     const panelEl = panelRef.current
     if (panelEl && delay > 0) {
       playCloseTransition(panelEl)
@@ -128,7 +133,7 @@ export function useEffortPanel() {
   }
 
   /** Instant close (open the model picker, outside navigation…). */
-  function closeNow() {
+  function closeNow(): void {
     cancelClose()
     closeRefocusRef.current = false
     setEffortClosing(false)
@@ -141,8 +146,8 @@ export function useEffortPanel() {
    * (sparks, shrink) bubble up but carry a different animationName, so only
    * the panel's own fade-out counts.
    */
-  function onPanelAnimationEnd(event) {
-    if (effortClosing && event && event.animationName === 'aem-pop-out') {
+  function onPanelAnimationEnd(event: ReactAnimationEvent<HTMLDivElement>): void {
+    if (effortClosing && event.animationName === 'aem-pop-out') {
       finishClose()
     }
   }

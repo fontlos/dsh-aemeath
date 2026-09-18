@@ -1,0 +1,37 @@
+/**
+ * Boundary contracts of the effort control: the injected faces the control
+ * consumes (locale, model directory, selection action, settings scope) and the
+ * inline-style helper for CSS custom properties. Structural types only — the
+ * official packages stay behind this file, so a control module never binds to a
+ * package subpath it does not actually use.
+ */
+import type { CSSProperties } from 'react'
+import type { ModelDirectoryState } from '@deepseek-ai/dsh-client-ui-model-selection/client'
+import type { SettingsScope } from '@deepseek-ai/dsh-client-ui-settings/client'
+import type { AemeathSettings } from '../../../settings-contract'
+import type { SnapshotSource } from '../store'
+
+/** Locale lookup (`ctx.locale.bind(namespace)`). */
+export type Translate = (key: string, params?: Record<string, unknown>) => string
+
+/** The session's shared model directory (`ModelSelectInjected['directory']`). */
+export type ModelDirectoryStore = SnapshotSource<ModelDirectoryState>
+
+/** A complete provider/model/effort selection (`ModelSelection`). */
+export interface ModelSelectionInput {
+  readonly provider: string
+  readonly model: string
+  readonly reasoningEffort?: string
+}
+
+/** Model selection action (`ModelSelectInjected['select']`). */
+export type SelectModel = (selection: ModelSelectionInput) => Promise<unknown>
+
+/** Settings scope bound to the `dsh-aemeath` namespace. */
+export type AemeathSettingsScope = SettingsScope<AemeathSettings>
+
+/** Tier the slider currently points at. */
+export type EffortMode = 'base' | 'high' | 'max'
+
+/** Inline style carrying CSS custom properties (React passes `--*` through). */
+export type CssVars = CSSProperties & Record<`--${string}`, string | number>

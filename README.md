@@ -7,7 +7,7 @@
 > - [`hachimi-ai/dsh-aemeath`](https://github.com/hachimi-ai/dsh-aemeath)
 > - [`magiczerowxy/dsh-modef`](https://github.com/magiczerowxy/dsh-modef)
 >
-> 整合并适配到 `>=dsh v0.1.2`
+> 对齐 `dsh 0.1.6-alpha.2`
 
 ## 安装
 
@@ -44,6 +44,23 @@ dsh plugin --profile web add link:/path/to/dsh-aemeath
 | 整理任务清单 | waiting | 整理任务清单... |
 | 读取技能 | review | 学习中... |
 | 全部完成 | celebrating | 太棒了! |
+
+## 结构
+
+```
+src/index.ts          宿主侧入口：静态资源路由、桌宠状态机、设置命名空间
+src/host/*.ts         宿主侧模块
+src/client/index.ts   浏览器侧入口（rolldown 打包成单个 loader 模块）
+src/client/*.ts(x)    皮肤注入、桌宠组件、设置页与滑块控件
+src/settings-contract.ts  宿主 schema 与浏览器 scope 共用的设置契约
+assets/               壁纸、精灵表、外置样式表
+cordis.patch.yml      插件行（id: dsh-aemeath）
+lib/                  构建产物（index.js / client.js，已加入仓库忽略）
+```
+
+- 构建: `scripts/build.mjs` 用 rolldown 分别产出 `lib/index.js`（Node ESM）与 `lib/client.js`（`window.__ModuleLoader__.load({ id, factory })`）；TS 与 JSX 都由 rolldown 转换，自动 JSX runtime 通过 shim 指向平台种子的 `react`
+- `pnpm typecheck` 检查类型，`pnpm build` 打包，`pnpm smoke` 在假 Context 上跑一遍宿主路由与客户端 apply
+- 样式表由宿主在启动时读取，改 CSS 后需要重启 dsh（仅刷新页面会继续用旧样式）
 
 ## 授权
 
