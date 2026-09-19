@@ -13,7 +13,7 @@ import type {
 } from 'react'
 import type { Translate } from './contract'
 import type { EffortStop } from './model-data'
-import { CHEVRON_ICON } from './visual'
+import { ARROWS_HORIZONTAL_ICON, CHEVRON_ICON } from './visual'
 
 export interface EffortControlProps {
   readonly t: Translate
@@ -150,18 +150,7 @@ export function EffortControl(props: EffortControlProps): ReactElement | null {
           </div>
           {fxMatrixEl}
           {dotNodes}
-          <div ref={thumbRefCb} className="aem-thumb">
-            <svg className="aem-thumbIcon" viewBox="0 0 24 24">
-              <path
-                d="M8 3L4 7l4 4M16 3l4 4-4 4M4 12h16M4 12l4 4-4 4M20 12l-4 4 4 4"
-                stroke="#71717a"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill="none"
-              />
-            </svg>
-          </div>
+          <div ref={thumbRefCb} className="aem-thumb">{ARROWS_HORIZONTAL_ICON}</div>
         </div>
       )
 

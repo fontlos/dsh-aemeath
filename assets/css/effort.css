@@ -69,7 +69,7 @@
 .aem-dotActive{background:#fff}
 .aem-dotMax{background:#c4b5fd}
 .aem-thumb{position:absolute;left:0;top:calc(50% - 8.5px);width:22px;height:26px;border-radius:6px;background:#fff;border:1px solid #e4e4e7;box-shadow:0 1px 4px rgba(0,0,0,.25);z-index:4;transform:translate(-11px,-50%);display:flex;justify-content:center;align-items:center;transition:box-shadow .15s ease;will-change:transform}
-.aem-thumbIcon{width:9px;height:9px}
+.aem-thumbIcon{width:11px;height:11px}
 .aem-slider:active .aem-thumb{box-shadow:0 2px 8px rgba(0,0,0,.3)}
 .aem-slider:focus-visible .aem-thumb{box-shadow:0 0 0 3px rgba(59,130,246,.4)}
 .aem-panelError{font-size:12px;line-height:18px;color:#dc2626;margin-top:7px}

@@ -8,7 +8,7 @@ import type { ModelDirectoryState } from '@deepseek-ai/dsh-client-ui-model-selec
 import type { Translate } from './contract'
 import type { ModelChoice } from './model-data'
 import type { LastAction } from './use-model-picker'
-import { CHEVRON_ICON } from './visual'
+import { CHECK_ICON, CHEVRON_ICON } from './visual'
 
 export interface ModelPickerProps {
   readonly t: Translate
@@ -113,7 +113,7 @@ export function ModelPicker(props: ModelPickerProps): ReactElement {
                       ? <span className="aem-description">{model.description}</span>
                       : null}
                   </span>
-                  <span className="aem-check">{selected ? '\u2713' : null}</span>
+                  <span className="aem-check">{selected ? CHECK_ICON : null}</span>
                 </button>
               )
             })}
