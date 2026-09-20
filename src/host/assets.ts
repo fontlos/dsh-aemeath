@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises'
+import { readFile, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Context } from '@deepseek-ai/cordis'
@@ -25,15 +25,20 @@ const ROUTES = [
   { path: '/dsh-aemeath/effort.css', file: 'css/effort.css', mime: 'text/css; charset=utf-8' },
 ] as const satisfies readonly AssetRoute[]
 
-/** File bytes per asset, memoized; `null` marks a known-missing file. */
-const cache = new Map<string, Buffer | null>()
+/**
+ * Last served revision of each asset: the bytes plus the mtime they came from.
+ * The payload is re-read when the file's mtime moves, so a style or art edit is
+ * picked up by the next request instead of needing a plugin restart.
+ */
+const cache = new Map<string, { readonly mtimeMs: number; readonly bytes: Buffer } | null>()
 
 async function loadAsset(file: string): Promise<Buffer | null> {
-  const cached = cache.get(file)
-  if (cached !== undefined) return cached
   try {
+    const info = await stat(join(ASSET_DIR, file))
+    const cached = cache.get(file)
+    if (cached && cached.mtimeMs === info.mtimeMs) return cached.bytes
     const bytes = await readFile(join(ASSET_DIR, file))
-    cache.set(file, bytes)
+    cache.set(file, { mtimeMs: info.mtimeMs, bytes })
     return bytes
   } catch (error) {
     console.error('[dsh-aemeath] asset load failed:', file, error)
@@ -58,7 +63,7 @@ function serveAsset(file: string, mime: string): WebRoute['handler'] {
     res.writeHead(200, {
       'content-type': mime,
       'content-length': String(body.byteLength),
-      'cache-control': 'public, max-age=3600',
+      'cache-control': 'no-cache',
     })
     if (req.method === 'HEAD') {
       res.end()
