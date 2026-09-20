@@ -176,6 +176,17 @@ export function useEffortSlider({
   }
 
   // ---- commit: forward the chosen tier to the model directory ----
+  /**
+   * Arm the starlight entry wipe. It must happen as soon as the handle reaches
+   * MAX — not when the async commit lands, which is a whole interaction later:
+   * the wipe's class is read when its layer mounts, so arming after the mount
+   * restarts the animation from the full-cover frame (the bar flashed blue once,
+   * on the first switch into MAX). Idempotent.
+   */
+  const armReveal = (index: number): void => {
+    if (index === stops.length - 1) starlightRevealArmed.set(sessionKey, true)
+  }
+
   const commitEffort = (index: number, keepOpen: boolean): void => {
     const stop = stops[index]
     if (state.current === null || stop === undefined || index < 0 || index >= stops.length) return
@@ -183,10 +194,10 @@ export function useEffortSlider({
       if (!keepOpen) requestClose(true)
       return
     }
-    // Arm the starlight entry animation only when the user really switches a
-    // tier INTO MAX. Switching between non-MAX tiers, staying on MAX, or
-    // merely reopening the panel never arms it.
-    if (index === stops.length - 1) starlightRevealArmed.set(sessionKey, true)
+    // A real switch into MAX arms the entry wipe; the pointer and keyboard
+    // paths already armed it before their layer mounted, so this only covers a
+    // commit that arrives some other way.
+    armReveal(index)
     pendingCommitRef.current = index
     pendingTargetRef.current = index
     const base: ModelSelectionInput = { provider: state.current.provider, model: state.current.model }
@@ -218,6 +229,7 @@ export function useEffortSlider({
     }
     pointerActiveRef.current = true
     const index = indexFromRatio(ratioOf(event.clientX))
+    armReveal(index)
     visualIdxRef.current = index
     setDragRatio(ratioOfIndex(index))
     animateSnap(visualRatioRef.current, ratioOfIndex(index), index, true)
@@ -226,6 +238,7 @@ export function useEffortSlider({
     if (!pointerActiveRef.current) return
     const index = indexFromRatio(ratioOf(event.clientX))
     if (index === visualIdxRef.current) return
+    armReveal(index)
     visualIdxRef.current = index
     setDragRatio(ratioOfIndex(index))
     animateSnap(visualRatioRef.current, ratioOfIndex(index), index, true)
@@ -235,6 +248,7 @@ export function useEffortSlider({
     pointerActiveRef.current = false
     const index = indexFromRatio(ratioOf(event.clientX))
     if (index !== visualIdxRef.current) {
+      armReveal(index)
       visualIdxRef.current = index
       setDragRatio(ratioOfIndex(index))
       animateSnap(visualRatioRef.current, ratioOfIndex(index), index, false)
@@ -258,6 +272,7 @@ export function useEffortSlider({
     event.preventDefault()
     const from = visualRatioRef.current
     const to = ratioOfIndex(next)
+    armReveal(next)
     visualIdxRef.current = next
     setDragRatio(to)
     animateSnap(from, to, next, false)

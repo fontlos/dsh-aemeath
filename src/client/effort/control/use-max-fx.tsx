@@ -26,6 +26,18 @@ export interface MaxFx {
   readonly matrixEl: ReactElement | null
 }
 
+/**
+ * The entry wipe sheet. Its state is decided once, when the sheet itself
+ * mounts: `starlightRevealArmed` can still be set after that (the async commit
+ * lands after the layer mounted), and letting the class change then would
+ * re-apply the animation from its full-cover frame — that restart was the blue
+ * flash on the very first switch into MAX. Freezing it keeps the wipe one-shot.
+ */
+function RevealSheet({ sessionKey }: { readonly sessionKey: string }): ReactElement {
+  const [reveal] = useState(() => starlightRevealArmed.get(sessionKey) === true)
+  return <div className={'aem-revealSheet' + (reveal ? '' : ' aem-revealDone')} />
+}
+
 export function useMaxFx({ effMode, fxSprayFlow, fxStarlight, effortOpen, sessionKey }: MaxFxInput): MaxFx {
   // Bumped every time the slider settles into MAX, remounting the spray so
   // the ignition stagger plays from the nozzle outward.
@@ -121,7 +133,6 @@ export function useMaxFx({ effMode, fxSprayFlow, fxStarlight, effortOpen, sessio
   // while it was open; reopening the panel on MAX shows the settled effect
   // instantly.
   const starlightVisible = fxStarlight && (effMode === 'max' || exitPhase)
-  const revealFirst = starlightVisible && starlightRevealArmed.get(sessionKey) === true
   const matrixEl = starlightVisible ? (
     <>
       <div className={'aem-starlightBg' + (exitPhase ? ' aem-starlightExit' : '')} />
@@ -149,7 +160,7 @@ export function useMaxFx({ effMode, fxSprayFlow, fxStarlight, effortOpen, sessio
           is already gone. On exit the whole effect fades out; the fill stays
           MAX-blue during the fade and only then transitions to the target tier. */}
       <div className="aem-reveal">
-        <div className={'aem-revealSheet' + (revealFirst ? '' : ' aem-revealDone')} />
+        <RevealSheet sessionKey={sessionKey} />
       </div>
     </>
   ) : null
