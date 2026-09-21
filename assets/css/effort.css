@@ -102,15 +102,18 @@
 .aem-styleSelect select:focus-visible{outline:none;box-shadow:0 0 0 2px var(--dsw-alias-border-l3)}
 .aem-styleSelect:disabled select{opacity:.5;cursor:default}
 .aem-settingsSection{display:flex;flex-direction:column;gap:6px;padding:2px 0 10px}
-.aem-surfaceList{display:flex;flex-direction:column;gap:2px}
-.aem-surfaceRow{display:flex;flex-direction:column;gap:8px;padding:14px 0;border-bottom:1px solid var(--dsw-alias-border-l2)}
-.aem-surfaceRowHead{display:flex;align-items:baseline;gap:8px}
-.aem-surfaceRowTitle{color:var(--dsw-alias-label-primary);font-size:14px;line-height:22px}
-.aem-surfaceHint{color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:18px;padding-bottom:2px}
-.aem-surfaceGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.aem-surfaceList{display:flex;flex-direction:column;gap:8px}
+.aem-surfaceHint{color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:18px}
+.aem-surfaceGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.aem-surfaceCard{display:flex;flex-direction:column;gap:8px;min-width:0;padding:10px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-layer-2)}
+.aem-surfaceCardTitle{color:var(--dsw-alias-label-primary);font-size:13px;line-height:20px;font-weight:500}
 .aem-surfaceField{display:flex;flex-direction:column;gap:4px;min-width:0}
 .aem-surfaceLabel{color:var(--dsw-alias-label-tertiary);font-size:11px;line-height:16px}
-.aem-surfaceInput{height:30px;min-width:0;padding:0 8px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary);font-family:inherit;font-size:13px;line-height:20px}
+.aem-surfaceInput{height:28px;min-width:0;padding:0 8px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font-family:inherit;font-size:13px;line-height:20px}
 .aem-surfaceInput:hover{border-color:var(--dsw-alias-border-l3)}
 .aem-surfaceInput:focus-visible{outline:none;box-shadow:0 0 0 2px var(--dsw-alias-border-l3)}
 .aem-surfaceInput[data-invalid=true]{border-color:var(--dsw-alias-state-error-primary)}
+.aem-surfaceRangeRow{display:flex;align-items:center;gap:8px;min-width:0}
+.aem-surfaceRange{flex:1 1 auto;min-width:0;height:18px;margin:0;accent-color:var(--dsw-alias-state-business-primary);cursor:pointer}
+.aem-surfaceRange:disabled{cursor:default}
+.aem-surfaceValue{flex:none;min-width:36px;text-align:right;color:var(--dsw-alias-label-tertiary);font-size:11px;line-height:16px;font-variant-numeric:tabular-nums}

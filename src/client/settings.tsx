@@ -25,7 +25,7 @@ import { EFFECT_STYLES, DEFAULT_STYLE, resolveStyle } from './effort/fx'
 import { NS, zh, en } from './effort/i18n'
 import type { SnapshotSelector } from './effort/store'
 import { bindSnapshotSelector } from './effort/store'
-import type { SurfaceKey } from './surfaces'
+import type { SurfaceKey, SurfacePart } from './surfaces'
 import { BLUR_MAX, applyScheme, clearSurfaces, parseHex, readScheme } from './surfaces'
 
 /** Injected face of the Aemeath section and the three rows it draws. */
@@ -218,81 +218,110 @@ export function mount(ctx: Context): void {
       )
     }
 
-    /** Number field in the row's own unit (percent for opacity, px for blur). */
-    const NumberField = function (props: {
+    /**
+     * Range field for opacity and blur. Dragging previews the surface straight
+     * away (no settings round-trip), and the scope write happens once at the end
+     * of the gesture. The draft is held until the stored value catches up, so the
+     * handle never snaps back while the host's answer is in flight.
+     */
+    const RangeField = function (props: {
+      readonly label: string
       readonly value: number
       readonly min: number
       readonly max: number
-      readonly step: number
+      readonly suffix: string
       readonly disabled: boolean
+      readonly onPreview: (next: number) => void
       readonly onCommit: (next: number) => void
     }): ReactElement {
+      const [draft, setDraft] = useState<number | null>(null)
+      const shown = draft ?? props.value
+      useEffect(function () {
+        if (draft !== null && Math.round(props.value) === draft) setDraft(null)
+      }, [props.value, draft])
+      const commit = function (): void {
+        if (draft !== null) props.onCommit(draft)
+      }
       return (
-        <input
-          className="aem-surfaceInput"
-          type="number"
-          value={String(Math.round(props.value))}
-          min={props.min}
-          max={props.max}
-          step={props.step}
-          disabled={props.disabled}
-          onChange={function (event) {
-            const next = Number(event.target.value)
-            if (!Number.isFinite(next)) return
-            props.onCommit(Math.min(props.max, Math.max(props.min, next)))
-          }}
-        />
+        <div className="aem-surfaceRangeRow">
+          <input
+            className="aem-surfaceRange"
+            type="range"
+            min={props.min}
+            max={props.max}
+            step={1}
+            value={String(Math.round(shown))}
+            disabled={props.disabled}
+            aria-label={props.label}
+            onChange={function (event) {
+              const next = Number(event.target.value)
+              if (!Number.isFinite(next)) return
+              setDraft(next)
+              props.onPreview(next)
+            }}
+            onPointerUp={commit}
+            onKeyUp={commit}
+            onBlur={commit}
+          />
+          <span className="aem-surfaceValue">{Math.round(shown)}{props.suffix}</span>
+        </div>
       )
     }
 
-    /** One surface: colour, opacity and blur, bound to its three settings fields. */
-    const SurfacePartRow = function (
+    /** One surface card: colour, opacity and blur stacked over the settings fields. */
+    const SurfacePartCard = function (
       props: RowProps & { readonly part: SurfaceKey; readonly title: string },
     ): ReactElement {
       const snap = props.useScope(function (s) { return s })
       const ready = snap !== null && snap.status === 'ready'
       const writable = snap !== null && snap.writable
+      const disabled = !ready || !writable
       const value = readScheme(snap?.value).parts[props.part]
       const set = function (field: string, next: unknown): void {
         void props.scope.set(field, next).catch(function () { })
       }
+      const preview = function (next: SurfacePart): void {
+        const scheme = readScheme(snap?.value)
+        const parts: Record<SurfaceKey, SurfacePart> = { ...scheme.parts, [props.part]: next }
+        applyScheme({ enabled: scheme.enabled, parts })
+      }
       return (
-        <div className="aem-surfaceRow">
-          <div className="aem-surfaceRowHead">
-            <span className="aem-surfaceRowTitle">{props.title}</span>
-          </div>
-          <div className="aem-surfaceGrid">
-            <label className="aem-surfaceField">
-              <span className="aem-surfaceLabel">{t('surface.color')}</span>
-              <HexField
-                value={value.color}
-                disabled={!ready || !writable}
-                onCommit={function (color) { set(props.part + 'Color', color) }}
-              />
-            </label>
-            <label className="aem-surfaceField">
-              <span className="aem-surfaceLabel">{t('surface.opacity')}</span>
-              <NumberField
-                value={value.opacity * 100}
-                min={0}
-                max={100}
-                step={5}
-                disabled={!ready || !writable}
-                onCommit={function (percent) { set(props.part + 'Opacity', percent / 100) }}
-              />
-            </label>
-            <label className="aem-surfaceField">
-              <span className="aem-surfaceLabel">{t('surface.blur')}</span>
-              <NumberField
-                value={value.blur}
-                min={0}
-                max={BLUR_MAX}
-                step={2}
-                disabled={!ready || !writable}
-                onCommit={function (px) { set(props.part + 'Blur', px) }}
-              />
-            </label>
-          </div>
+        <div className="aem-surfaceCard">
+          <div className="aem-surfaceCardTitle">{props.title}</div>
+          <label className="aem-surfaceField">
+            <span className="aem-surfaceLabel">{t('surface.color')}</span>
+            <HexField
+              value={value.color}
+              disabled={disabled}
+              onCommit={function (color) { set(props.part + 'Color', color) }}
+            />
+          </label>
+          <label className="aem-surfaceField">
+            <span className="aem-surfaceLabel">{t('surface.opacity')}</span>
+            <RangeField
+              label={props.title + ' ' + t('surface.opacity')}
+              value={value.opacity * 100}
+              min={0}
+              max={100}
+              suffix="%"
+              disabled={disabled}
+              onPreview={function (percent) { preview({ ...value, opacity: percent / 100 }) }}
+              onCommit={function (percent) { set(props.part + 'Opacity', percent / 100) }}
+            />
+          </label>
+          <label className="aem-surfaceField">
+            <span className="aem-surfaceLabel">{t('surface.blur')}</span>
+            <RangeField
+              label={props.title + ' ' + t('surface.blur')}
+              value={value.blur}
+              min={0}
+              max={BLUR_MAX}
+              suffix="px"
+              disabled={disabled}
+              onPreview={function (px) { preview({ ...value, blur: px }) }}
+              onCommit={function (px) { set(props.part + 'Blur', px) }}
+            />
+          </label>
         </div>
       )
     }
@@ -315,17 +344,19 @@ export function mount(ctx: Context): void {
       )
     }
 
-    /** The four surface rows, drawn only while the scheme is on. */
+    /** The four surface cards, drawn as a 2×2 grid while the scheme is on. */
     const SurfaceParts = function (props: RowProps): ReactElement | null {
       const snap = props.useScope(function (s) { return s })
       if (snap === null || snap.status !== 'ready' || !readScheme(snap.value).enabled) return null
       return (
         <div className="aem-surfaceList">
           <div className="aem-surfaceHint">{t('surface.hint')}</div>
-          <SurfacePartRow {...props} part="sidebar" title={t('surface.sidebar')} />
-          <SurfacePartRow {...props} part="panel" title={t('surface.panel')} />
-          <SurfacePartRow {...props} part="chat" title={t('surface.chat')} />
-          <SurfacePartRow {...props} part="input" title={t('surface.input')} />
+          <div className="aem-surfaceGrid">
+            <SurfacePartCard {...props} part="sidebar" title={t('surface.sidebar')} />
+            <SurfacePartCard {...props} part="panel" title={t('surface.panel')} />
+            <SurfacePartCard {...props} part="chat" title={t('surface.chat')} />
+            <SurfacePartCard {...props} part="input" title={t('surface.input')} />
+          </div>
         </div>
       )
     }

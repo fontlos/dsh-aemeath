@@ -97,15 +97,26 @@ export function toCssColor(part: SurfacePart): string {
   return alpha >= 1 ? `rgb(${channels})` : `rgba(${channels}, ${alpha})`
 }
 
-function writeVar(name: string, value: string): void {
-  const root = document.documentElement
+/**
+ * Where the tokens are written: `body`, never `html`. Our own palette declares
+ * these very properties on `html body` (skin.css), and a declaration on the
+ * element itself beats the value it would inherit — writing them on `html`
+ * leaves every descendant reading the stylesheet's copy instead.
+ */
+function surfaceRoot(): HTMLElement | null {
+  if (typeof document === 'undefined') return null
+  return document.body ?? document.documentElement ?? null
+}
+
+function writeVar(root: HTMLElement, name: string, value: string): void {
   if (!replaced.has(name)) replaced.set(name, root.style.getPropertyValue(name))
   root.style.setProperty(name, value)
 }
 
 /** Publish one scheme; a disabled scheme restores the previous inline state. */
 export function applyScheme(scheme: SurfaceScheme): void {
-  if (typeof document === 'undefined') return
+  const root = surfaceRoot()
+  if (root === null) return
   if (!scheme.enabled) {
     clearSurfaces()
     return
@@ -113,19 +124,19 @@ export function applyScheme(scheme: SurfaceScheme): void {
   for (const key of SURFACE_KEYS) {
     const part = scheme.parts[key]
     const color = toCssColor(part)
-    for (const token of PART_TOKENS[key]) writeVar(token, color)
+    for (const token of PART_TOKENS[key]) writeVar(root, token, color)
     // `none` rather than `blur(0px)`: a no-op filter would still create a
     // containing block, which traps fixed-position menus inside the surface.
     const blur = clamp(part.blur, 0, BLUR_MAX)
-    writeVar(`--aem-blur-${key}`, blur > 0 ? `blur(${blur}px)` : 'none')
+    writeVar(root, `--aem-blur-${key}`, blur > 0 ? `blur(${blur}px)` : 'none')
   }
-  document.documentElement.setAttribute(SURFACE_ATTR, '')
+  root.setAttribute(SURFACE_ATTR, '')
 }
 
 /** Restore every property this applier touched and disarm the blur rules. */
 export function clearSurfaces(): void {
-  if (typeof document === 'undefined') return
-  const root = document.documentElement
+  const root = surfaceRoot()
+  if (root === null) return
   for (const [name, previous] of replaced) {
     if (previous === '') root.style.removeProperty(name)
     else root.style.setProperty(name, previous)

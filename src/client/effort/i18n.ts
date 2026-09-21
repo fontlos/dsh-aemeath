@@ -40,7 +40,7 @@ export const zh = {
   'surface.color': '颜色',
   'surface.opacity': '透明度',
   'surface.blur': '毛玻璃',
-  'surface.hint': '颜色填 #rrggbb 或 #rgb，透明度 0–100%，毛玻璃 0–60px。',
+  'surface.hint': '颜色填 #rrggbb 或 #rgb；透明度和毛玻璃拖动滑块调节。',
 } as const
 
 /** English dictionary; its type keeps the key set in sync with `zh`. */
@@ -83,5 +83,5 @@ export const en: Record<keyof typeof zh, string> = {
   'surface.color': 'Colour',
   'surface.opacity': 'Opacity',
   'surface.blur': 'Blur',
-  'surface.hint': 'Colour as #rrggbb or #rgb, opacity 0–100%, blur 0–60px.',
+  'surface.hint': 'Colour as #rrggbb or #rgb; drag the sliders for opacity and blur.',
 }
