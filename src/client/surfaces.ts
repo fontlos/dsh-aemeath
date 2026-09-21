@@ -33,12 +33,22 @@ export const SURFACE_ATTR = 'data-aem-surfaces'
 
 /**
  * Shipped tokens each part drives. The grouping follows how the theme consumes
- * them: the settings shell and cards read the layer tokens, the sidebar and the
- * composer card own a dedicated token each.
+ * them: the settings shell, cards, module surfaces and menus all read the layer
+ * tokens, the sidebar and the composer card own a dedicated token each.
+ *
+ * The skin palette no longer declares any of these — the scheme is their only
+ * writer, so switching it off hands the surfaces back to the stock DSH values.
  */
 const PART_TOKENS: Record<SurfaceKey, readonly string[]> = {
   sidebar: ['--dsw-specific-sidebar-fill'],
-  panel: ['--dsw-alias-bg-layer-1', '--dsw-alias-bg-layer-2', '--dsw-alias-bg-layer-3', '--dsw-specific-menu'],
+  panel: [
+    '--dsw-alias-bg-layer-1',
+    '--dsw-alias-bg-layer-2',
+    '--dsw-alias-bg-layer-3',
+    '--dsw-alias-bg-module-platform',
+    '--dsw-alias-bg-multi-select',
+    '--dsw-specific-menu',
+  ],
   chat: ['--dsw-alias-bg-base'],
   input: ['--dsw-specific-input-major'],
 }
