@@ -11,3 +11,20 @@ html body[data-ds-dark-theme] { --dsw-alias-bg-layer-3: rgba(30,40,82,0.70); --d
 ::-webkit-scrollbar-thumb { background: rgba(125,211,252,0.35); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(125,211,252,0.55); }
 ::-webkit-scrollbar-track { background: transparent; }
+
+/* ---- surface scheme (settings tab: 自定义界面配色) -------------------------
+   The client writes the colours straight onto the shipped tokens as inline
+   custom properties; only the blur needs an element of its own, so each part
+   hangs its filter on a stable anchor while `html[data-aem-surfaces]` is set.
+   The variable holds a whole filter value, so 0 blur means `none` and no
+   containing block is created for fixed-position descendants. */
+html[data-aem-surfaces] [class$="_frame"] > [class$="_root"] { backdrop-filter: var(--aem-blur-sidebar, none); -webkit-backdrop-filter: var(--aem-blur-sidebar, none); }
+html[data-aem-surfaces] [role="dialog"][aria-modal="true"][aria-labelledby],
+html[data-aem-surfaces] [role="menu"]:not([data-dockkit-tab-menu]),
+html[data-aem-surfaces] [role="listbox"] { backdrop-filter: var(--aem-blur-panel, none); -webkit-backdrop-filter: var(--aem-blur-panel, none); }
+html[data-aem-surfaces] [data-conversation-content] { backdrop-filter: var(--aem-blur-chat, none); -webkit-backdrop-filter: var(--aem-blur-chat, none); }
+/* The composer card blurs through a pseudo-element underlay, so the card's own
+   children keep their stacking and the card does not become a containing block. */
+html[data-aem-surfaces] [data-composer-card] { position: relative; isolation: isolate; }
+html[data-aem-surfaces] [data-composer-card]::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none; backdrop-filter: var(--aem-blur-input, none); -webkit-backdrop-filter: var(--aem-blur-input, none); }
+

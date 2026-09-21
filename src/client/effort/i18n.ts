@@ -31,6 +31,16 @@ export const zh = {
   'style.sprayFlow': '喷射流光',
   'settings.on': '已开启',
   'settings.off': '已关闭',
+  'surface.toggle.title': '自定义界面配色',
+  'surface.toggle.desc': '开启后用下面四项分别控制侧边面板、设置面板、主对话背景和输入框的颜色、透明度与毛玻璃；关闭则完全交还给皮肤自带的配色。',
+  'surface.sidebar': '侧边面板',
+  'surface.panel': '设置面板',
+  'surface.chat': '主对话背景',
+  'surface.input': '输入框背景',
+  'surface.color': '颜色',
+  'surface.opacity': '透明度',
+  'surface.blur': '毛玻璃',
+  'surface.hint': '颜色填 #rrggbb 或 #rgb，透明度 0–100%，毛玻璃 0–60px。',
 } as const
 
 /** English dictionary; its type keeps the key set in sync with `zh`. */
@@ -64,4 +74,14 @@ export const en: Record<keyof typeof zh, string> = {
   'style.sprayFlow': 'Spray Flow',
   'settings.on': 'On',
   'settings.off': 'Off',
+  'surface.toggle.title': 'Custom surface colours',
+  'surface.toggle.desc': 'While on, the four rows below drive the colour, opacity and blur of the sidebar, the settings panel, the conversation background and the composer card; off hands them back to the theme palette.',
+  'surface.sidebar': 'Sidebar',
+  'surface.panel': 'Settings panel',
+  'surface.chat': 'Conversation background',
+  'surface.input': 'Input background',
+  'surface.color': 'Colour',
+  'surface.opacity': 'Opacity',
+  'surface.blur': 'Blur',
+  'surface.hint': 'Colour as #rrggbb or #rgb, opacity 0–100%, blur 0–60px.',
 }

@@ -2,9 +2,9 @@
 // conditional composer seat for the advanced model/effort control.
 //
 // The tab registers one `settings.section` entry (rendered by the settings
-// shell when active) which draws the three rows itself — pet visibility,
-// advanced-effort toggle and its max-tier animation style — all bound to the
-// `dsh-aemeath` settings scope.
+// shell when active) which draws the rows itself — pet visibility,
+// advanced-effort toggle, its max-tier animation style and the surface colour
+// scheme — all bound to the `dsh-aemeath` settings scope.
 //
 // The seat claims the `conversation.input.model` slot only while advancedEffort
 // is on. That cell is per-session and elects its winner by priority, so the
@@ -14,6 +14,7 @@
 
 import type { Context, Fiber } from '@deepseek-ai/cordis'
 import type { SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-ui-settings/client'
+import { useEffect, useState } from 'react'
 import type { ReactElement, ReactNode } from 'react'
 import type { AemeathSettings } from '../settings-contract'
 import type { Dispose, SlotEntryOptions } from './dsh-client'
@@ -24,6 +25,8 @@ import { EFFECT_STYLES, DEFAULT_STYLE, resolveStyle } from './effort/fx'
 import { NS, zh, en } from './effort/i18n'
 import type { SnapshotSelector } from './effort/store'
 import { bindSnapshotSelector } from './effort/store'
+import type { SurfaceKey } from './surfaces'
+import { BLUR_MAX, applyScheme, clearSurfaces, parseHex, readScheme } from './surfaces'
 
 /** Injected face of the Aemeath section and the three rows it draws. */
 interface RowProps {
@@ -68,6 +71,24 @@ export function mount(ctx: Context): void {
     const t: Translate = sctx.locale.bind(NS)
     const scope: AemeathSettingsScope = sctx.settingsScope.bind<AemeathSettings>({ namespace: 'dsh-aemeath' })
     const useScope = bindSnapshotSelector(scope)
+
+    // ---- surface scheme: push the four surfaces onto the shipped tokens ----
+    // Kept outside React: it is plain DOM state that has to stay applied while
+    // the settings section is closed, and it must be handed back on dispose.
+    const syncSurfaces = function (): void {
+      try {
+        const snap = scope.getSnapshot()
+        if (snap && snap.status === 'ready') applyScheme(readScheme(snap.value))
+      } catch (_) { /* keep whatever is applied */ }
+    }
+    sctx.effect(function () {
+      syncSurfaces()
+      const stop = scope.subscribe(syncSurfaces)
+      return function () {
+        stop()
+        clearSurfaces()
+      }
+    }, 'dsh-aemeath: surface scheme')
 
     // ---- rows (rendered by the Aemeath section below) ----
     const currentStyle = function () {
@@ -168,6 +189,147 @@ export function mount(ctx: Context): void {
       )
     }
 
+    /** Text field that commits on blur or Enter, so partial hex text never writes. */
+    const HexField = function (props: {
+      readonly value: string
+      readonly disabled: boolean
+      readonly onCommit: (next: string) => void
+    }): ReactElement {
+      const [draft, setDraft] = useState(props.value)
+      useEffect(function () { setDraft(props.value) }, [props.value])
+      const valid = parseHex(draft) !== null
+      const commit = function (): void {
+        const next = draft.trim()
+        if (!valid) setDraft(props.value)
+        else if (next !== props.value) props.onCommit(next)
+      }
+      return (
+        <input
+          className="aem-surfaceInput"
+          type="text"
+          value={draft}
+          disabled={props.disabled}
+          spellCheck={false}
+          data-invalid={valid ? undefined : true}
+          onChange={function (event) { setDraft(event.target.value) }}
+          onBlur={commit}
+          onKeyDown={function (event) { if (event.key === 'Enter') { event.preventDefault(); commit() } }}
+        />
+      )
+    }
+
+    /** Number field in the row's own unit (percent for opacity, px for blur). */
+    const NumberField = function (props: {
+      readonly value: number
+      readonly min: number
+      readonly max: number
+      readonly step: number
+      readonly disabled: boolean
+      readonly onCommit: (next: number) => void
+    }): ReactElement {
+      return (
+        <input
+          className="aem-surfaceInput"
+          type="number"
+          value={String(Math.round(props.value))}
+          min={props.min}
+          max={props.max}
+          step={props.step}
+          disabled={props.disabled}
+          onChange={function (event) {
+            const next = Number(event.target.value)
+            if (!Number.isFinite(next)) return
+            props.onCommit(Math.min(props.max, Math.max(props.min, next)))
+          }}
+        />
+      )
+    }
+
+    /** One surface: colour, opacity and blur, bound to its three settings fields. */
+    const SurfacePartRow = function (
+      props: RowProps & { readonly part: SurfaceKey; readonly title: string },
+    ): ReactElement {
+      const snap = props.useScope(function (s) { return s })
+      const ready = snap !== null && snap.status === 'ready'
+      const writable = snap !== null && snap.writable
+      const value = readScheme(snap?.value).parts[props.part]
+      const set = function (field: string, next: unknown): void {
+        void props.scope.set(field, next).catch(function () { })
+      }
+      return (
+        <div className="aem-surfaceRow">
+          <div className="aem-surfaceRowHead">
+            <span className="aem-surfaceRowTitle">{props.title}</span>
+          </div>
+          <div className="aem-surfaceGrid">
+            <label className="aem-surfaceField">
+              <span className="aem-surfaceLabel">{t('surface.color')}</span>
+              <HexField
+                value={value.color}
+                disabled={!ready || !writable}
+                onCommit={function (color) { set(props.part + 'Color', color) }}
+              />
+            </label>
+            <label className="aem-surfaceField">
+              <span className="aem-surfaceLabel">{t('surface.opacity')}</span>
+              <NumberField
+                value={value.opacity * 100}
+                min={0}
+                max={100}
+                step={5}
+                disabled={!ready || !writable}
+                onCommit={function (percent) { set(props.part + 'Opacity', percent / 100) }}
+              />
+            </label>
+            <label className="aem-surfaceField">
+              <span className="aem-surfaceLabel">{t('surface.blur')}</span>
+              <NumberField
+                value={value.blur}
+                min={0}
+                max={BLUR_MAX}
+                step={2}
+                disabled={!ready || !writable}
+                onCommit={function (px) { set(props.part + 'Blur', px) }}
+              />
+            </label>
+          </div>
+        </div>
+      )
+    }
+
+    /** Master switch: hands the four surfaces between us and the theme palette. */
+    const SurfaceRow = function (props: RowProps): ReactElement {
+      const snap = props.useScope(function (s) { return s })
+      const ready = snap !== null && snap.status === 'ready'
+      const writable = snap !== null && snap.writable
+      const enabled = readScheme(snap?.value).enabled
+      return (
+        <RowFrame title={t('surface.toggle.title')} desc={t('surface.toggle.desc')}>
+          <Toggle
+            checked={enabled}
+            label={t('surface.toggle.title')}
+            disabled={!ready || !writable}
+            onClick={function () { void props.scope.set('surfaceScheme', !enabled).catch(function () { }) }}
+          />
+        </RowFrame>
+      )
+    }
+
+    /** The four surface rows, drawn only while the scheme is on. */
+    const SurfaceParts = function (props: RowProps): ReactElement | null {
+      const snap = props.useScope(function (s) { return s })
+      if (snap === null || snap.status !== 'ready' || !readScheme(snap.value).enabled) return null
+      return (
+        <div className="aem-surfaceList">
+          <div className="aem-surfaceHint">{t('surface.hint')}</div>
+          <SurfacePartRow {...props} part="sidebar" title={t('surface.sidebar')} />
+          <SurfacePartRow {...props} part="panel" title={t('surface.panel')} />
+          <SurfacePartRow {...props} part="chat" title={t('surface.chat')} />
+          <SurfacePartRow {...props} part="input" title={t('surface.input')} />
+        </div>
+      )
+    }
+
     /** The "爱弥斯主题" section content: our rows, bound to the scope. */
     const AemeathSection = function (props: RowProps): ReactElement {
       const rowProps: RowProps = { useScope: props.useScope, scope: props.scope }
@@ -176,6 +338,8 @@ export function mount(ctx: Context): void {
           <PetRow {...rowProps} />
           <AdvancedRow {...rowProps} />
           <StyleRow {...rowProps} />
+          <SurfaceRow {...rowProps} />
+          <SurfaceParts {...rowProps} />
         </div>
       )
     }
@@ -329,6 +493,7 @@ export function mount(ctx: Context): void {
           ready = !!(snap && snap.status === 'ready')
         } catch (_) { /* keep polling */ }
         syncSeat()
+        syncSurfaces()
         if (ready || attempts >= 50) {
           clearInterval(hydrationTimer!)
           hydrationTimer = null

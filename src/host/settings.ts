@@ -6,7 +6,8 @@ import { DEFAULT_SETTINGS } from '../settings-contract'
 
 /**
  * Plugin settings namespace (`dsh-aemeath`): pet visibility, the advanced-effort
- * toggle and its max-tier animation style, persisted per profile.
+ * toggle and its max-tier animation style, plus the surface colour scheme, all
+ * persisted per profile.
  *
  * `@deepseek-ai/dsh-settings` / `@deepseek-ai/schemastery` resolve from the
  * profile tree at runtime, so they are imported dynamically: under a `link:`
@@ -26,6 +27,19 @@ function loadSchema() {
       petEnabled: z.boolean().default(DEFAULT_SETTINGS.petEnabled),
       advancedEffort: z.boolean().default(DEFAULT_SETTINGS.advancedEffort),
       effortStyle: z.string().default(DEFAULT_SETTINGS.effortStyle),
+      surfaceScheme: z.boolean().default(DEFAULT_SETTINGS.surfaceScheme),
+      sidebarColor: z.string().default(DEFAULT_SETTINGS.sidebarColor),
+      sidebarOpacity: z.number().default(DEFAULT_SETTINGS.sidebarOpacity),
+      sidebarBlur: z.number().default(DEFAULT_SETTINGS.sidebarBlur),
+      panelColor: z.string().default(DEFAULT_SETTINGS.panelColor),
+      panelOpacity: z.number().default(DEFAULT_SETTINGS.panelOpacity),
+      panelBlur: z.number().default(DEFAULT_SETTINGS.panelBlur),
+      chatColor: z.string().default(DEFAULT_SETTINGS.chatColor),
+      chatOpacity: z.number().default(DEFAULT_SETTINGS.chatOpacity),
+      chatBlur: z.number().default(DEFAULT_SETTINGS.chatBlur),
+      inputColor: z.string().default(DEFAULT_SETTINGS.inputColor),
+      inputOpacity: z.number().default(DEFAULT_SETTINGS.inputOpacity),
+      inputBlur: z.number().default(DEFAULT_SETTINGS.inputBlur),
     })
   })
 }
