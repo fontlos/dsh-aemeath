@@ -36,6 +36,9 @@ export interface AemeathSettings {
 /**
  * Defaults of that namespace: the host schema declares them, so a client that
  * has not read its section yet renders the same thing the host would resolve.
+ *
+ * A default only ever fills a field the stored section does not carry, so an
+ * existing profile keeps every value it already wrote.
  */
 export const DEFAULT_SETTINGS: AemeathSettings = {
   petEnabled: true,
@@ -43,15 +46,15 @@ export const DEFAULT_SETTINGS: AemeathSettings = {
   effortStyle: 'starlight',
   surfaceScheme: true,
   sidebarColor: '#ffffff',
-  sidebarOpacity: 1,
-  sidebarBlur: 0,
+  sidebarOpacity: 0.6,
+  sidebarBlur: 30,
   panelColor: '#ffffff',
   panelOpacity: 1,
-  panelBlur: 0,
+  panelBlur: 30,
   chatColor: '#ffffff',
-  chatOpacity: 1,
-  chatBlur: 0,
+  chatOpacity: 0.25,
+  chatBlur: 30,
   inputColor: '#ffffff',
-  inputOpacity: 1,
-  inputBlur: 0,
+  inputOpacity: 0.3,
+  inputBlur: 30,
 }

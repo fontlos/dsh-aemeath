@@ -10,6 +10,7 @@
  * restores whatever the host had inline before us.
  */
 import type { AemeathSettings } from '../settings-contract'
+import { DEFAULT_SETTINGS } from '../settings-contract'
 
 export type SurfaceKey = 'sidebar' | 'panel' | 'chat' | 'input'
 
@@ -42,8 +43,6 @@ const PART_TOKENS: Record<SurfaceKey, readonly string[]> = {
   input: ['--dsw-specific-input-major'],
 }
 
-export const DEFAULT_PART: SurfacePart = { color: '#ffffff', opacity: 1, blur: 0 }
-
 /** Bounds the settings rows offer and the applier enforces. */
 export const BLUR_MAX = 60
 
@@ -67,6 +66,26 @@ export function parseHex(value: string): readonly [number, number, number] | nul
   ]
 }
 
+/** Normalize one part's stored fields, clamped into the ranges we accept. */
+function normalize(color: string, opacity: number, blur: number): SurfacePart {
+  return {
+    color: parseHex(color) === null ? '#ffffff' : color,
+    opacity: clamp(opacity, 0, 1),
+    blur: clamp(blur, 0, BLUR_MAX),
+  }
+}
+
+/**
+ * Per-field fallbacks, taken from the shared defaults: a malformed stored value
+ * falls back to exactly what a fresh profile would have resolved to.
+ */
+const FALLBACKS: Record<SurfaceKey, SurfacePart> = {
+  sidebar: normalize(DEFAULT_SETTINGS.sidebarColor, DEFAULT_SETTINGS.sidebarOpacity, DEFAULT_SETTINGS.sidebarBlur),
+  panel: normalize(DEFAULT_SETTINGS.panelColor, DEFAULT_SETTINGS.panelOpacity, DEFAULT_SETTINGS.panelBlur),
+  chat: normalize(DEFAULT_SETTINGS.chatColor, DEFAULT_SETTINGS.chatOpacity, DEFAULT_SETTINGS.chatBlur),
+  input: normalize(DEFAULT_SETTINGS.inputColor, DEFAULT_SETTINGS.inputOpacity, DEFAULT_SETTINGS.inputBlur),
+}
+
 function readPart(color: unknown, opacity: unknown, blur: unknown, fallback: SurfacePart): SurfacePart {
   const rgb = typeof color === 'string' ? parseHex(color) : null
   return {
@@ -81,17 +100,17 @@ export function readScheme(settings: AemeathSettings | undefined): SurfaceScheme
   return {
     enabled: settings?.surfaceScheme !== false,
     parts: {
-      sidebar: readPart(settings?.sidebarColor, settings?.sidebarOpacity, settings?.sidebarBlur, DEFAULT_PART),
-      panel: readPart(settings?.panelColor, settings?.panelOpacity, settings?.panelBlur, DEFAULT_PART),
-      chat: readPart(settings?.chatColor, settings?.chatOpacity, settings?.chatBlur, DEFAULT_PART),
-      input: readPart(settings?.inputColor, settings?.inputOpacity, settings?.inputBlur, DEFAULT_PART),
+      sidebar: readPart(settings?.sidebarColor, settings?.sidebarOpacity, settings?.sidebarBlur, FALLBACKS.sidebar),
+      panel: readPart(settings?.panelColor, settings?.panelOpacity, settings?.panelBlur, FALLBACKS.panel),
+      chat: readPart(settings?.chatColor, settings?.chatOpacity, settings?.chatBlur, FALLBACKS.chat),
+      input: readPart(settings?.inputColor, settings?.inputOpacity, settings?.inputBlur, FALLBACKS.input),
     },
   }
 }
 
 /** `#a1b2c3` + 0.6 → `rgba(161, 178, 195, 0.6)`; opaque colours stay `rgb()`. */
 export function toCssColor(part: SurfacePart): string {
-  const rgb = parseHex(part.color) ?? parseHex(DEFAULT_PART.color) ?? [255, 255, 255]
+  const rgb = parseHex(part.color) ?? [255, 255, 255]
   const alpha = clamp(part.opacity, 0, 1)
   const channels = `${rgb[0]}, ${rgb[1]}, ${rgb[2]}`
   return alpha >= 1 ? `rgb(${channels})` : `rgba(${channels}, ${alpha})`
