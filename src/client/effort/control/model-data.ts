@@ -11,8 +11,8 @@ import type { SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-ui-settings/
 import type { AemeathSettings } from '../../../settings-contract'
 import type { EffectStyleId } from '../fx'
 import { resolveStyle } from '../fx'
-import type { SnapshotSelector } from '../store'
-import { bindSnapshotSelector } from '../store'
+import type { SnapshotSelector } from '../../store'
+import { bindSnapshotSelector } from '../../store'
 import type { AemeathSettingsScope, ModelDirectoryStore, Translate } from './contract'
 
 export type { Translate }

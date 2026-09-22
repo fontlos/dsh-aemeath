@@ -13,7 +13,7 @@ import type { ModelDirectoryState } from '@deepseek-ai/dsh-client-ui-model-selec
 import type { SettingsScope } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { AemeathSettings } from '../../../settings-contract'
 import type { Translate } from '../../i18n'
-import type { SnapshotSource } from '../store'
+import type { SnapshotSource } from '../../store'
 
 export type { Translate }
 

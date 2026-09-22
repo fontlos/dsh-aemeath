@@ -7,7 +7,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { SettingsScopeBinder, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { AemeathSettings } from '../settings-contract'
 import type { AemeathSettingsScope } from './effort/control/contract'
-import { bindSnapshotSelector } from './effort/store'
+import { bindSnapshotSelector } from './store'
 
 declare global {
   interface Window {
