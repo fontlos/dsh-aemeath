@@ -24,12 +24,12 @@ declare module '@deepseek-ai/cordis' {
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
     /**
-     * This plugin's theme/effort dictionaries (`src/client/effort/i18n.ts`).
+     * This plugin's dictionaries (`src/client/i18n.ts`).
      * The key domain is left as `string`: the namespace is registered in the
      * single bilingual `register(NS, { zh, en })` form, while the translate it
      * binds is handed to surfaces typed with the wide `Translate` face.
      */
-    'dsh-aemeath-effort': string
+    'dsh-aemeath': string
   }
 }
 

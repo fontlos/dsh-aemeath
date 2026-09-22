@@ -1,5 +1,12 @@
-/** Effort locale dictionaries (zh/en) under the dsh-aemeath-effort namespace. */
-export const NS = 'dsh-aemeath-effort'
+/**
+ * The plugin's locale dictionaries (zh/en) under the `dsh-aemeath` namespace:
+ * one dictionary for every surface the browser half draws — the settings tab,
+ * the composer seat with its effort control, and the pet's labels.
+ */
+export const NS = 'dsh-aemeath'
+
+/** Locale lookup (`ctx.locale.bind(namespace)`); `params` fill `{name}` slots. */
+export type Translate = (key: string, params?: Record<string, unknown>) => string
 
 export const zh = {
   'nav.title': '爱弥斯主题',
