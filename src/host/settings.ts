@@ -2,63 +2,22 @@ import type { Context } from '@deepseek-ai/cordis'
 // Carries the `Context.settings` augmentation (type-only: nothing is imported
 // at runtime — the service is provided by the harness).
 import type {} from '@deepseek-ai/dsh-settings'
-import { DEFAULT_SETTINGS } from '../settings-contract'
 
 /**
- * Plugin settings namespace (`dsh-aemeath`): pet visibility, the advanced-effort
- * toggle and its max-tier animation style, plus the surface colour scheme, all
- * persisted per profile.
+ * Declare that this plugin brings its own settings page, so the shell never
+ * generates one from the Config schema (every page it would draw is already
+ * drawn by our own `settings.section` contributor).
  *
- * `@deepseek-ai/dsh-settings` / `@deepseek-ai/schemastery` resolve from the
- * profile tree at runtime, so they are imported dynamically: under a `link:`
- * install they live outside this folder and a static import would crash the
- * plugin tree at boot. A failure only disables this feature.
+ * A soft dependency in the shape the settings package documents: the child
+ * `inject` names the plugin fiber the policy belongs to, so a late-loading or
+ * replaced settings service still picks it up, and the skin, the pet and the
+ * seat keep working without it.
  */
-type Schemastery = typeof import('@deepseek-ai/schemastery').default
-
-let schema: ReturnType<typeof loadSchema> | undefined
-
-function loadSchema() {
-  return import('@deepseek-ai/schemastery').then((module) => {
-    // The constructors live on the default export; the fallback covers runtimes
-    // that hand back the namespace object directly.
-    const z = ((module as { default?: Schemastery }).default ?? module) as Schemastery
-    return z.object({
-      petEnabled: z.boolean().default(DEFAULT_SETTINGS.petEnabled),
-      advancedEffort: z.boolean().default(DEFAULT_SETTINGS.advancedEffort),
-      effortStyle: z.string().default(DEFAULT_SETTINGS.effortStyle),
-      surfaceScheme: z.boolean().default(DEFAULT_SETTINGS.surfaceScheme),
-      sidebarColor: z.string().default(DEFAULT_SETTINGS.sidebarColor),
-      sidebarOpacity: z.number().default(DEFAULT_SETTINGS.sidebarOpacity),
-      sidebarBlur: z.number().default(DEFAULT_SETTINGS.sidebarBlur),
-      panelColor: z.string().default(DEFAULT_SETTINGS.panelColor),
-      panelOpacity: z.number().default(DEFAULT_SETTINGS.panelOpacity),
-      panelBlur: z.number().default(DEFAULT_SETTINGS.panelBlur),
-      chatColor: z.string().default(DEFAULT_SETTINGS.chatColor),
-      chatOpacity: z.number().default(DEFAULT_SETTINGS.chatOpacity),
-      chatBlur: z.number().default(DEFAULT_SETTINGS.chatBlur),
-      inputColor: z.string().default(DEFAULT_SETTINGS.inputColor),
-      inputOpacity: z.number().default(DEFAULT_SETTINGS.inputOpacity),
-      inputBlur: z.number().default(DEFAULT_SETTINGS.inputBlur),
-    })
-  })
-}
-
-/** Register the namespace; a soft dependency, so skin/pet survive without it. */
-export function registerSettings(ctx: Context): void {
-  ctx.inject(['settings'], (sctx) => {
-    schema ??= loadSchema()
-    void schema.then(
-      (config) => {
-        sctx.settings.register('dsh-aemeath', config)
-      },
-      (error: unknown) => {
-        console.warn(
-          '[dsh-aemeath] settings unavailable:',
-          error instanceof Error ? error.message : String(error),
-          '— for link:/local installs run `pnpm install` in the plugin folder.',
-        )
-      },
+export function registerSettingsPage(ctx: Context): void {
+  ctx.inject(['settings'], (child) => {
+    child.effect(
+      () => child.settings.configure({ auto: false }, ctx.fiber),
+      'dsh-aemeath: settings page policy',
     )
   })
 }

@@ -1,6 +1,6 @@
 /**
  * Boundary contracts of the effort control: the injected faces the control
- * consumes (model directory, selection action, settings scope) and the
+ * consumes (model directory, selection action, settings form) and the
  * inline-style helper for CSS custom properties. Structural types only — the
  * official packages stay behind this file, so a control module never binds to a
  * package subpath it does not actually use.
@@ -10,7 +10,7 @@
  */
 import type { CSSProperties } from 'react'
 import type { ModelDirectoryState } from '@deepseek-ai/dsh-client-ui-model-selection/client'
-import type { SettingsScope } from '@deepseek-ai/dsh-client-ui-settings/client'
+import type { ConfigForm } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { AemeathSettings } from '../../../settings-contract'
 import type { Translate } from '../../i18n'
 import type { SnapshotSource } from '../../store'
@@ -30,8 +30,11 @@ export interface ModelSelectionInput {
 /** Model selection action (`ModelSelectInjected['select']`). */
 export type SelectModel = (selection: ModelSelectionInput) => Promise<unknown>
 
-/** Settings scope bound to the `dsh-aemeath` namespace. */
-export type AemeathSettingsScope = SettingsScope<AemeathSettings>
+/**
+ * The plugin's own configuration form (`ctx.configForms.get(entryId)`), keyed by
+ * the Loader entry id our bundle patch inserts (`dsh-aemeath`).
+ */
+export type AemeathSettingsForm = ConfigForm<AemeathSettings>
 
 /** Tier the slider currently points at. */
 export type EffortMode = 'base' | 'high' | 'max'

@@ -33,15 +33,21 @@ mkdirSync(OUT, { recursive: true })
 const host = await rolldown({
   input: join(ROOT, 'src', 'index.ts'),
   platform: 'node',
-  // Resolved from the profile tree at runtime: must stay dynamic imports.
+  // Resolved from the plugin package at runtime (it is a dependency): the host
+  // bundle must keep it a bare import rather than inlining a second copy, so the
+  // schema it hands the Loader comes from the same package the harness uses.
   external: [/^node:/, '@deepseek-ai/schemastery'],
 })
 const hostOutput = await host.generate({ format: 'esm', entryFileNames: 'index.js', sourcemap: true })
 const hostChunk = hostOutput.output[0]
 assert(hostChunk !== undefined, 'host build emitted no chunk')
 assert(
-  /import\(\s*["']@deepseek-ai\/schemastery["']\s*\)/.test(hostChunk.code),
-  'host bundle lost the lazy @deepseek-ai/schemastery import (was it inlined?)',
+  /(?:import|from)\s*[^\n]*["']@deepseek-ai\/schemastery["']/.test(hostChunk.code),
+  'host bundle no longer imports @deepseek-ai/schemastery by name',
+)
+assert(
+  !/z\.object\s*=|function object\(/.test(hostChunk.code),
+  'host bundle inlined schemastery — it must stay an external import',
 )
 assert(!/["']react["']/.test(hostChunk.code), 'host bundle references react — client code leaked into the host build')
 

@@ -13,12 +13,13 @@
 // is bounded and event-free.
 
 import type { Context, Fiber } from '@deepseek-ai/cordis'
-import type { SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-ui-settings/client'
+import type { ConfigFormSnapshot } from '@deepseek-ai/dsh-client-ui-settings/client'
 import { useEffect, useState } from 'react'
 import type { ReactElement, ReactNode } from 'react'
 import type { AemeathSettings } from '../settings-contract'
+import { ENTRY_ID } from '../settings-contract'
 import type { Dispose, SlotEntryOptions } from './dsh-client'
-import type { AemeathSettingsScope, Translate } from './effort/control/contract'
+import type { AemeathSettingsForm, Translate } from './effort/control/contract'
 import { ModelEffortControl } from './effort/control/index'
 import type { ModelEffortControlProps } from './effort/control/index'
 import { EFFECT_STYLES, DEFAULT_STYLE, resolveStyle } from './effort/fx'
@@ -30,8 +31,8 @@ import { BLUR_MAX, applyScheme, clearSurfaces, parseHex, readScheme } from './su
 
 /** Injected face of the Aemeath section and the three rows it draws. */
 interface RowProps {
-  readonly useScope: SnapshotSelector<SettingsScopeSnapshot<AemeathSettings>>
-  readonly scope: AemeathSettingsScope
+  readonly useScope: SnapshotSelector<ConfigFormSnapshot<AemeathSettings>>
+  readonly scope: AemeathSettingsForm
 }
 
 /** Shared switch markup: title/desc on the left, switch on the right. */
@@ -61,15 +62,16 @@ export function mount(ctx: Context): void {
     ctx.effect(() => () => link.remove(), 'dsh-aemeath: effort css cleanup')
   }
 
-  // Optional services (locale / settingsScope) — nothing here may block skin/pet.
-  ctx.inject(['slots', 'locale', 'settingsScope'], function (sctx) {
+  // Optional services (locale / configForms) — nothing here may block skin/pet.
+  ctx.inject(['slots', 'locale', 'configForms'], function (sctx) {
     const slots = sctx.slots
     if (!slots) return
     sctx.effect(function () {
       return sctx.locale.register(NS, { zh, en })
     }, 'dsh-aemeath: theme dictionaries')
     const t: Translate = sctx.locale.bind(NS)
-    const scope: AemeathSettingsScope = sctx.settingsScope.bind<AemeathSettings>({ namespace: 'dsh-aemeath' })
+    // The plugin's own configuration form, keyed by our Loader entry id.
+    const scope: AemeathSettingsForm = sctx.configForms.get<AemeathSettings>(ENTRY_ID)
     const useScope = bindSnapshotSelector(scope)
 
     // ---- surface scheme: push the four surfaces onto the shipped tokens ----
@@ -446,7 +448,7 @@ export function mount(ctx: Context): void {
                   t,
                   sessionId,
                   style: currentStyle(),
-                  settingsScope: scope,
+                  settingsForm: scope,
                   seatGeneration: myGeneration,
                   onSeatMounted,
                   onSeatLost,

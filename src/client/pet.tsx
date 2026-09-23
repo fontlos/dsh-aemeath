@@ -4,9 +4,10 @@
 import { useEffect, useState } from 'react'
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent, ReactElement } from 'react'
 import type { Context } from '@deepseek-ai/cordis'
-import type { SettingsScopeBinder, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-ui-settings/client'
+import type { ConfigFormSnapshot, ConfigForms } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { AemeathSettings } from '../settings-contract'
-import type { AemeathSettingsScope } from './effort/control/contract'
+import { ENTRY_ID } from '../settings-contract'
+import type { AemeathSettingsForm } from './effort/control/contract'
 import { bindSnapshotSelector } from './store'
 
 declare global {
@@ -82,13 +83,13 @@ interface Bubble {
   readonly persistent: boolean
 }
 
-// Pet visibility lives in the dsh-aemeath settings scope (petEnabled, host
-// schema). The settings service is a soft dependency: the bridge below is
-// filled by the mount-time inject, and while it is absent the pet falls back
-// to the legacy localStorage hidden flag.
-const scopeBox: { current: AemeathSettingsScope | null } = { current: null }
+// Pet visibility lives in the plugin's own configuration form (petEnabled,
+// declared by the host Config schema). The settings service is a soft
+// dependency: the bridge below is filled by the mount-time inject, and while it
+// is absent the pet falls back to the legacy localStorage hidden flag.
+const scopeBox: { current: AemeathSettingsForm | null } = { current: null }
 
-function usePetSetting(): SettingsScopeSnapshot<AemeathSettings> | null {
+function usePetSetting(): ConfigFormSnapshot<AemeathSettings> | null {
   // Wake up when the settings scope arrives after this component mounted
   // (it may register later than the first render).
   const [, bump] = useState(0)
@@ -123,20 +124,18 @@ export function mount(ctx: Context): void {
     ctx.effect(() => () => link.remove(), 'dsh-aemeath: pet css cleanup')
   }
 
-  // ---- settings scope bridge (soft dependency) ----
-  // Bind the dsh-aemeath namespace when the service is (or becomes) live.
-  const bindScope = (binder: SettingsScopeBinder | undefined): void => {
-    if (binder && typeof binder.bind === 'function') {
-      scopeBox.current = binder.bind<AemeathSettings>({ namespace: 'dsh-aemeath' })
-    }
+  // ---- settings form bridge (soft dependency) ----
+  // Take this entry's shared form when the service is (or becomes) live.
+  const bindScope = (forms: ConfigForms | undefined): void => {
+    if (forms) scopeBox.current = forms.get<AemeathSettings>(ENTRY_ID)
   }
-  // `get` is the injection-free accessor: reading this fiber's `settingsScope`
+  // `get` is the injection-free accessor: reading this fiber's `configForms`
   // property directly throws in cordis ("cannot get property … without
   // inject"), because the entry declares only `slots`. The property stays as
   // the fallback, evaluated only when `get` had no answer.
-  bindScope((ctx.get('settingsScope') as SettingsScopeBinder | undefined) || ctx.settingsScope)
-  ctx.inject(['settingsScope'], (sctx) => {
-    bindScope(sctx.settingsScope)
+  bindScope((ctx.get('configForms') as ConfigForms | undefined) || ctx.configForms)
+  ctx.inject(['configForms'], (sctx) => {
+    bindScope(sctx.configForms)
   })
 
   // ---- localStorage helpers ----

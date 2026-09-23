@@ -1,19 +1,19 @@
 /**
  * Model directory → control data. `useModelData` subscribes to the directory
- * store and the optional settings scope (live effort-style preference), then
+ * store and the optional configuration form (live effort-style preference), then
  * derives the flat model list, the current selection and the effort tiers shared
  * by the picker, the slider and the max-tier effects.
  */
 import { useEffect, useState } from 'react'
 import type { ModelCatalogModel, ModelProviderGroup } from '@deepseek-ai/dsh-api-session-controller/types'
 import type { ModelDirectoryState } from '@deepseek-ai/dsh-client-ui-model-selection/client'
-import type { SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-ui-settings/client'
+import type { ConfigFormSnapshot } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { AemeathSettings } from '../../../settings-contract'
 import type { EffectStyleId } from '../fx'
 import { resolveStyle } from '../fx'
 import type { SnapshotSelector } from '../../store'
 import { bindSnapshotSelector } from '../../store'
-import type { AemeathSettingsScope, ModelDirectoryStore, Translate } from './contract'
+import type { AemeathSettingsForm, ModelDirectoryStore, Translate } from './contract'
 
 export type { Translate }
 
@@ -106,8 +106,8 @@ export function deriveModelData(state: ModelDirectoryState, t: Translate): Model
 
 export interface ModelDataInput {
   readonly directory: ModelDirectoryStore
-  /** Soft dependency: absent on hosts without the settings scope. */
-  readonly settingsScope: AemeathSettingsScope | undefined
+  /** Soft dependency: absent on hosts without the settings service. */
+  readonly settingsForm: AemeathSettingsForm | undefined
   readonly initialStyle: string | undefined
   readonly t: Translate
 }
@@ -119,9 +119,9 @@ export interface ModelDataResult extends ModelData {
 }
 
 /** All render-time inputs of the control: directory data + live effort style. */
-export function useModelData({ directory, settingsScope, initialStyle, t }: ModelDataInput): ModelDataResult {
-  const useStyleScope: SnapshotSelector<SettingsScopeSnapshot<AemeathSettings>> | null =
-    settingsScope === undefined ? null : bindSnapshotSelector(settingsScope)
+export function useModelData({ directory, settingsForm, initialStyle, t }: ModelDataInput): ModelDataResult {
+  const useStyleScope: SnapshotSelector<ConfigFormSnapshot<AemeathSettings>> | null =
+    settingsForm === undefined ? null : bindSnapshotSelector(settingsForm)
   const styleSnap = useStyleScope === null ? null : useStyleScope((snapshot) => snapshot)
 
   let liveStyle = initialStyle

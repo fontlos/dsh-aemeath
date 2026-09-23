@@ -5,7 +5,7 @@
  */
 import { useEffect, useRef } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
-import type { AemeathSettingsScope, EffortMode, ModelDirectoryStore, SelectModel, Translate } from './contract'
+import type { AemeathSettingsForm, EffortMode, ModelDirectoryStore, SelectModel, Translate } from './contract'
 import { EffortControl } from './EffortControl'
 import { ModelPicker } from './ModelPicker'
 import { useEffortPanel } from './use-effort-panel'
@@ -21,7 +21,7 @@ export interface ModelEffortControlProps {
   readonly select: SelectModel
   readonly t: Translate
   readonly style: string | undefined
-  readonly settingsScope: AemeathSettingsScope | undefined
+  readonly settingsForm: AemeathSettingsForm | undefined
   readonly sessionId: string | number
   readonly seatGeneration: number
   readonly onSeatMounted?: (generation: number) => void
@@ -38,7 +38,7 @@ export function ModelEffortControl(props: ModelEffortControlProps) {
   const select = props.select
   const t = props.t
   const initialStyle = props.style
-  const settingsScope = props.settingsScope
+  const settingsForm = props.settingsForm
   const sessionKey = props.sessionId !== undefined ? String(props.sessionId) : 'default'
 
   // Seat liveness: report mount/unmount so the seat registration can
@@ -55,7 +55,7 @@ export function ModelEffortControl(props: ModelEffortControlProps) {
   }, [])
 
   // --- domain hooks (fixed order, all unconditional) ---
-  const data = useModelData({ directory, settingsScope, initialStyle, t })
+  const data = useModelData({ directory, settingsForm, initialStyle, t })
   const panel = useEffortPanel()
   const picker = useModelPicker({ available, load, select, state: data.state })
   const slider = useEffortSlider({

@@ -1,6 +1,13 @@
 /**
- * The plugin's settings namespace value — one contract shared by the host schema
- * (`src/host/settings.ts`) and the client scopes (`dsh-aemeath` namespace).
+ * The Loader entry id this plugin's bundle patch inserts (`cordis.patch.yml`).
+ * The settings system keys every configuration form by entry id, so the browser
+ * half reads its values and writes its edits through this name.
+ */
+export const ENTRY_ID = 'dsh-aemeath'
+
+/**
+ * The plugin's settings value — one contract shared by the host Config schema
+ * (`src/host/config.ts`) and the browser form (`ctx.configForms.get(ENTRY_ID)`).
  */
 export interface AemeathSettings {
   /** Whether the desktop pet renders at all. */
@@ -47,13 +54,13 @@ export const DEFAULT_SETTINGS: AemeathSettings = {
   surfaceScheme: true,
   sidebarColor: '#ffffff',
   sidebarOpacity: 0.6,
-  sidebarBlur: 30,
+  sidebarBlur: 0,
   panelColor: '#ffffff',
   panelOpacity: 1,
-  panelBlur: 30,
+  panelBlur: 0,
   chatColor: '#ffffff',
   chatOpacity: 0.25,
-  chatBlur: 30,
+  chatBlur: 0,
   inputColor: '#ffffff',
   inputOpacity: 0.3,
   inputBlur: 30,
